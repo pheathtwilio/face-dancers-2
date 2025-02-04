@@ -1,0 +1,210 @@
+import EventEmitter from 'events'
+import StreamingAvatar, {
+    AvatarQuality,
+    StreamingEvents,
+    TaskMode,
+    TaskType,
+    VoiceEmotion,
+  } from '@heygen/streaming-avatar'
+import EventService from './event-service'
+import AvatarEvents from '../util/avatar-types'
+
+// export enum AvatarEvents {
+//     AVATAR_STARTED_SESSION = 'avatar-started',
+//     AVATAR_STREAM_READY = 'avatar-stream-ready',
+//     AVATER_END_SESSION = 'avatar-end-session'
+// }
+
+class AvatarServiceClass extends EventEmitter {
+    private static instance: AvatarServiceClass
+
+    private language: string = 'en'
+
+    private stream: ((stream: MediaStream) => void) | undefined
+    private avatar: StreamingAvatar | null = null // Placeholder for avatar SDK instance
+    private token: string = ''
+
+    private isLoadingSession: boolean = false
+    private isLoadingRepeat: boolean = false
+
+    private AVATARS = [
+        { avatar_id: 'Eric_public_pro2_20230608', name: 'Edward in Blue Shirt' },
+        { avatar_id: 'Tyler-incasualsuit-20220721', name: 'Tyler in Casual Suit' },
+        { avatar_id: 'Anna_public_3_20240108', name: 'Anna in Brown T-shirt' },
+        { avatar_id: 'Susan_public_2_20240328', name: 'Susan in Black Shirt' },
+        { avatar_id: 'josh_lite3_20230714', name: 'Joshua Heygen CEO' },
+        { avatar_id: '37f4d912aa564663a1cf8d63acd0e1ab', name: 'Sofia'}
+    ]
+
+    // Private constructor prevents external instantiation
+    private constructor() {
+        super()
+
+        // register events
+        EventService.on(AvatarEvents.AVATAR_INITIALIZE, () => {
+            this.initialize() // will post avatar-started-session
+        })
+    }
+
+    // Static method to get the single instance
+    public static getInstance(): AvatarServiceClass {
+        if (!AvatarServiceClass.instance) {
+            AvatarServiceClass.instance = new AvatarServiceClass()
+        }
+        return AvatarServiceClass.instance
+    }
+
+    private fetchAccessToken = async () => {
+        try {
+            const response = await fetch('/api/avatar', { method: 'POST' })
+            const wallet = await response.json()
+            return wallet.token
+        } catch (e) {
+            console.error('Error fetching access token:', e)
+        }
+        return ''
+    }
+
+    public async initialize() {
+        this.token = await this.fetchAccessToken()
+        this.isLoadingSession = true
+        this.avatar = new StreamingAvatar({token: this.token})
+
+        // Register Events
+        this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, async () => {
+            await this.endSession()
+        })
+        this.avatar.on(StreamingEvents.STREAM_READY, (e) => {
+            console.log(AvatarEvents.AVATAR_STREAM_READY)
+            if(e.detail)
+                this.stream = e.detail
+
+            EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, this.stream) // other services will listen for this 
+        })
+        this.avatar.on(StreamingEvents.USER_START, (e) => {
+            // do nothing
+        })
+        this.avatar.on(StreamingEvents.USER_STOP, (e) => {
+            // do nothing
+        })
+
+        try {
+
+            const response = await this.avatar.createStartAvatar({
+                quality: AvatarQuality.High,
+                avatarName: this.AVATARS[5].avatar_id,
+                voice: { rate: 1.5, emotion: VoiceEmotion.EXCITED },
+                language: this.language,
+                disableIdleTimeout: true
+            })
+
+        }catch(e){
+            console.error(e)
+        }finally{
+            this.isLoadingSession = false
+        }
+
+        // EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION)
+
+        // return AvatarServiceClass.getInstance()
+    }
+
+    public getSessions = async () => {
+        const url = 'https://api.heygen.com/v1/streaming.list'
+        const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY
+
+        if(!apiKey){
+            console.error('HEYGEN APIKEY is not defined')
+            return null
+        }
+
+        try{
+            const response = await fetch(url, {
+                method: 'GET', 
+                headers: {
+                    'Accept': 'application/json',
+                    'x-api-key': apiKey
+                }
+            })
+
+            if(!response.ok){
+                throw new Error(`${response.status}`)
+            }
+
+            const sessionObject = await response.json()
+
+            let data: object[] = []
+            if(!sessionObject.data)
+                throw new Error('No data on Sessions Object')
+
+            if(sessionObject.data.sessions.length > 0){
+                for(let i=0; i < sessionObject.data.sessions.length; i++){
+                    data.push(sessionObject.data.sessions[i])
+                }
+            }
+
+            return data
+
+        }catch(e){console.error(e)}
+    }
+
+    public closeSession = async (id: string) => {
+        const url = 'https://api.heygen.com/v1/streaming.stop'
+        const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY
+
+        if(!apiKey){
+            console.error('HEYGEN APIKEY is not defined')
+            return null
+        }
+
+        try{
+            const response = await fetch(url, {
+                method: 'POST', 
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type':'application/json',
+                    'x-api-key': apiKey
+                },
+                body: JSON.stringify({ session_id: id})
+            })
+
+            if(!response.ok){
+                throw new Error(`${response.status}`)
+            }
+
+            const data = await response.json()
+            console.log(data)
+            return data
+
+        }catch(e){console.error(e)}
+    }
+
+    public endSession = async () => {
+        console.log(AvatarEvents.AVATAR_SESSION_ENDED)
+        EventService.emit(AvatarEvents.AVATAR_SESSION_ENDED)
+        if(this.avatar)
+            try{
+                await this.avatar.stopAvatar()
+                this.stream = undefined
+            }catch(e){console.error(e)}    
+    }
+
+    public handleSpeak = async (text: string) => {
+
+        if (!this.avatar) {
+            console.log('Avatar API not initialized')
+            return
+        }
+
+        // Interrupt if speaking
+        await this.avatar.interrupt().catch((e) => console.log(e.message))
+        await this.avatar.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => console.log(e.message))
+
+    }
+
+}
+
+// Export the singleton instance
+const AvatarService = AvatarServiceClass.getInstance()
+export default AvatarService
+
