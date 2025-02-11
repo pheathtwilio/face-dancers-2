@@ -44,6 +44,10 @@ class AvatarServiceClass extends EventEmitter {
         EventService.on(AvatarEvents.AVATAR_INITIALIZE, () => {
             this.initialize() // will post avatar-started-session
         })
+
+        EventService.on(AvatarEvents.AVATAR_END_SESSION, () => {
+            this.endSession()
+        })
     }
 
     // Static method to get the single instance

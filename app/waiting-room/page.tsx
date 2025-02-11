@@ -27,18 +27,21 @@ const WaitingRoom: React.FC = () => {
     const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
 
     const [isNavigatingToRoom, setIsNavigatingToRoom] = useState<boolean>(false)
-
+    // const [isGoodbye, setIsGoodbye] = useState<boolean>(false)
+    
     const avatarServiceRef = useRef<typeof AvatarServiceClass | null>(null)
     const videoServiceRef = useRef<typeof VideoService | null>(null)
+
     // const [sessions, setSessions] = useState<object[]>([])
-    
-   
+  
 
     // Global Mounting    
     useEffect(() => {
 
         if(typeof window !== 'undefined')
           setSearchParams(new URLSearchParams(window.location.search))
+
+
         
         fetchDevices()
 
@@ -49,18 +52,15 @@ const WaitingRoom: React.FC = () => {
         initializeVideo()
 
         // setup listeners
-        EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (name) => {
+        EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
           setParticipants(participants+1)
-          setParticipantName(name)
+          // setParticipantName(object.name)
         })
       
 
         // cleanup function
         return () => {
-          if(!isNavigatingToRoom)
-            avatarServiceRef.current?.endSession() // this is why it gets called twice, the end session button also calls endSession
-            videoServiceRef.current?.endRoom()
-            console.log('unmounting the Waiting Room')
+
         } 
         
     }, [])
@@ -105,30 +105,33 @@ const WaitingRoom: React.FC = () => {
       }
     }
 
-    const createRoom = () => {
-      console.log("CREATING ROOM")
-      EventService.emit(VideoEvents.VIDEO_CREATE_ROOM, {
-        audioDeviceId: selectedAudioDevice,
-        videoDeviceId: selectedVideoDevice,
-        userName: 'temp',
-        roomName: 'temp'
-      })
-    }
+    // const createRoom = () => {
+    //   console.log("CREATING ROOM")
+    //   EventService.emit(VideoEvents.VIDEO_CREATE_ROOM, {
+    //     audioDeviceId: selectedAudioDevice,
+    //     videoDeviceId: selectedVideoDevice,
+    //     userName: 'temp',
+    //     roomName: 'temp'
+    //   })
+    // }
 
     const joinRoom = async () => {
         console.log('Joining Room')
-        setIsNavigatingToRoom(true)
+        // setIsNavigatingToRoom(true)
+        // isGoodbye = true
 
         // tell the video service to add human to room
 
         // reroute to video room
+        router.push('/video-room')
     }
 
     const endSession = async () => {
 
         if(avatarServiceRef.current){
           console.log('calling end session')
-          await avatarServiceRef.current.endSession()
+          EventService.emit(AvatarEvents.AVATAR_END_SESSION)
+          EventService.emit(VideoEvents.VIDEO_END_SESSION)
         }
 
         // then reroute to goodbye page

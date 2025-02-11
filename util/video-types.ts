@@ -18,7 +18,9 @@ export enum VideoEvents {
     VIDEO_JOIN_HUMAN_TO_ROOM = 'video-join-human-to-room',
     VIDEO_HUMAN_JOINED = 'video-human-joined',
     VIDEO_END_SESSION = 'video-end-session',
-    VIDEO_SESSION_ENDED = 'video-session-ended'
+    VIDEO_SESSION_ENDED = 'video-session-ended',
+    VIDEO_REQUEST_ROOM = 'video-request-room',
+    VIDEO_ROOM_REQUESTED = 'video-room-requested'
 }
 
 export interface TwilioVideoRoom {

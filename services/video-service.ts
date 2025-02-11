@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
 import { VideoRoomParameters, VideoEvents, RoomPreferences, TwilioVideoRoom } from '@/util/video-types'
-import { connect, createLocalTracks } from 'twilio-video'
+import { connect, createLocalTracks, LocalAudioTrack, LocalVideoTrack, Room } from 'twilio-video'
 import AvatarEvents from '@/util/avatar-types'
 import EventService from './event-service'
 
@@ -13,6 +13,8 @@ class VideoServiceClass extends EventEmitter {
     // private userName: string = ''
     private roomName: string = 'face-dancers' // want this room name to be the same all the time
     private room: TwilioVideoRoom | null = null
+
+    private videoRoom: Room | null = null
 
     private roomPrefs: RoomPreferences = {
         UniqueName: this.roomName,
@@ -29,8 +31,17 @@ class VideoServiceClass extends EventEmitter {
             // once complete emit an event that a room has been started and how many participants are in the room
         })
 
+        EventService.on(VideoEvents.VIDEO_END_SESSION, () => {
+            this.endRoom()
+        })
+
         EventService.on(VideoEvents.VIDEO_JOIN_HUMAN_TO_ROOM, (params: VideoRoomParameters) => {
             // this.joinHumanToRoom(params)
+        })
+
+        EventService.on(VideoEvents.VIDEO_REQUEST_ROOM, () => {
+            console.log('video room requested')
+            EventService.emit(VideoEvents.VIDEO_ROOM_REQUESTED, this.videoRoom)
         })
 
         // EventService.on(VideoEvents.VIDEO_CREATE_ROOM, (params: VideoRoomParameters) => {
@@ -58,9 +69,11 @@ class VideoServiceClass extends EventEmitter {
             body: JSON.stringify(roomPrefs)
         }))
 
-        const roomData = await response.json()
+        const roomData = await response.json() // preliminary room details
         if(!this.room)
             this.room = roomData.room
+
+        console.log(this.room)
 
         const tokenFetch = await (fetch('api/twilio-video-token', {
             method: 'POST',
@@ -71,19 +84,24 @@ class VideoServiceClass extends EventEmitter {
         const { token } = await tokenFetch.json()
         if(!token) throw new Error('Failed to retrieve JWT token')
 
-        const audioTrack = stream.getAudioTracks()[0]
-        const videoTrack = stream.getVideoTracks()[0]
+        // console.log(stream.getVideoTracks())
 
-        if(!audioTrack || !videoTrack){
-            throw new Error('MediaStream is missing required tracks')
-        }
 
-        const tracks = await createLocalTracks({
-            audio: { deviceId: {ideal: audioTrack.getSettings().deviceId }},
-            video: { deviceId: {ideal: videoTrack.getSettings().deviceId}}
-        })
+        // const audioTrack = stream.getAudioTracks()[0]
+        // const videoTrack = stream.getVideoTracks()[0]
 
-        await connect(token, {
+        // if(!audioTrack || !videoTrack){
+        //     throw new Error('MediaStream is missing required tracks')
+        // }
+
+        // const localAudioTrack = new LocalAudioTrack(audioTrack)
+        // const localVideoTrack = new LocalVideoTrack(videoTrack)
+
+        const tracks = stream.getTracks()
+
+        console.log(`TRACKS: ${tracks}`)
+
+        this.videoRoom = await connect(token, {
             name: this.roomName,
             tracks: tracks
         })
@@ -141,7 +159,7 @@ class VideoServiceClass extends EventEmitter {
                 }))
     
                 const room = await response.json()
-                console.log(`${VideoEvents.VIDEO_SESSION_ENDED} for ${room.sid}`)
+                console.log(`${VideoEvents.VIDEO_SESSION_ENDED} for ${this.room.sid}`)
 
 
             }catch(e){console.error(e)}
