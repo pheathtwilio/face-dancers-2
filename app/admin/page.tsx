@@ -5,6 +5,7 @@ import AvatarService from '@/services/avatar-service'
 import AvatarEvents from '@/util/avatar-types'
 import AvatarServiceClass from '@/services/avatar-service'
 import { useRouter } from 'next/navigation'
+import EventService from '@/services/event-service'
 
 
 const WaitingRoom: React.FC = () => {
@@ -47,23 +48,24 @@ const WaitingRoom: React.FC = () => {
       }
     }
 
+    // TODO - emit events for getting sessions
     const listSessions = async () => {
       if(avatarServiceRef.current){
-        let sessions = await avatarServiceRef.current.getSessions()
-        console.log(sessions)
-        setSessions(sessions ?? [])
+        EventService.emit(AvatarEvents.AVATAR_GET_SESSIONS, (sessions: object[]) => {
+          console.log(sessions)
+          setSessions(sessions ?? [])
+        })
+
+        
       }
     }
 
+    // TODO emit events for closing sessions
     const endSession = async (session_id: string) => {
 
         let data: object = {}
         if(avatarServiceRef.current){
-            console.log('calling end session for ', session_id)
-            let data = await avatarServiceRef.current.closeSession(session_id)
-            if(data.message === 'success'){
-                await listSessions()
-            }
+            EventService.emit(AvatarEvents.AVATAR_CLOSE_SESSION, (session_id))
         }
 
         console.log(data)

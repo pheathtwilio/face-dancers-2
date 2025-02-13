@@ -15,7 +15,6 @@
     "next": "15.1.6",
     "openai": "^4.82.0",
     "react": "^19.0.0",
-    "react-audio-visualizer": "^1.0.3",
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
     "twilio": "^5.4.3",

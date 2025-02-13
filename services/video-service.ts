@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
 import { VideoRoomParameters, VideoEvents, RoomPreferences, TwilioVideoRoom } from '@/util/video-types'
-import { connect, createLocalTracks, LocalAudioTrack, LocalVideoTrack, Room } from 'twilio-video'
+import { connect, createLocalTracks, LocalAudioTrack, LocalTrackPublication, LocalVideoTrack, Room } from 'twilio-video'
 import AvatarEvents from '@/util/avatar-types'
 import EventService from './event-service'
 
@@ -15,6 +15,8 @@ class VideoServiceClass extends EventEmitter {
     private room: TwilioVideoRoom | null = null
 
     private videoRoom: Room | null = null
+
+    private container: HTMLDivElement | null = null
 
     private roomPrefs: RoomPreferences = {
         UniqueName: this.roomName,
@@ -35,18 +37,24 @@ class VideoServiceClass extends EventEmitter {
             this.endRoom()
         })
 
-        EventService.on(VideoEvents.VIDEO_JOIN_HUMAN_TO_ROOM, (params: VideoRoomParameters) => {
-            // this.joinHumanToRoom(params)
-        })
-
-        EventService.on(VideoEvents.VIDEO_REQUEST_ROOM, () => {
-            console.log('video room requested')
-            EventService.emit(VideoEvents.VIDEO_ROOM_REQUESTED, this.videoRoom)
-        })
-
-        // EventService.on(VideoEvents.VIDEO_CREATE_ROOM, (params: VideoRoomParameters) => {
-        //     this.createRoom(params)
+        // EventService.on(VideoEvents.VIDEO_JOIN_HUMAN_TO_ROOM, (params: VideoRoomParameters) => {
+        //     // this.joinHumanToRoom(params)
         // })
+
+        EventService.on(VideoEvents.VIDEO_REQUEST_HTML, () => {
+            console.log('video room html requested')
+            let html: HTMLDivElement | null = null
+            html = this.getHTMLMediaElements()
+            EventService.emit(VideoEvents.VIDEO_HTML_REQUESTED, html)
+        })
+
+        EventService.on(AvatarEvents.AVATAR_START_TALKING, () => {
+            this.unMuteAudio()
+        })
+
+        EventService.on(AvatarEvents.AVATAR_STOP_TALKING, () => {
+            this.muteAudio()
+        })
 
     }
 
@@ -69,11 +77,10 @@ class VideoServiceClass extends EventEmitter {
             body: JSON.stringify(roomPrefs)
         }))
 
+        // TODO - FIX THIS
         const roomData = await response.json() // preliminary room details
         if(!this.room)
             this.room = roomData.room
-
-        console.log(this.room)
 
         const tokenFetch = await (fetch('api/twilio-video-token', {
             method: 'POST',
@@ -84,22 +91,7 @@ class VideoServiceClass extends EventEmitter {
         const { token } = await tokenFetch.json()
         if(!token) throw new Error('Failed to retrieve JWT token')
 
-        // console.log(stream.getVideoTracks())
-
-
-        // const audioTrack = stream.getAudioTracks()[0]
-        // const videoTrack = stream.getVideoTracks()[0]
-
-        // if(!audioTrack || !videoTrack){
-        //     throw new Error('MediaStream is missing required tracks')
-        // }
-
-        // const localAudioTrack = new LocalAudioTrack(audioTrack)
-        // const localVideoTrack = new LocalVideoTrack(videoTrack)
-
         const tracks = stream.getTracks()
-
-        console.log(`TRACKS: ${tracks}`)
 
         this.videoRoom = await connect(token, {
             name: this.roomName,
@@ -111,41 +103,56 @@ class VideoServiceClass extends EventEmitter {
 
     }
 
-    // private joinHumanToRoom = async (params: VideoRoomParameters) => {
+    private getHTMLMediaElements = () => {
 
-    //     // need to check if room exists, in this scenario an avatar MUST be joined and in the room first
+        if (!this.videoRoom) throw new Error('no video room has been set')
 
-    //     try{
+        // Create a container element to hold both video and audio elements
+        this.container = document.createElement('div')
 
-    //         this.setRoomParams(params)
+        this.videoRoom.localParticipant.tracks.forEach((publication: LocalTrackPublication) => {
+            if (publication.track) {
+                if (publication.track.kind === 'video') {
+                    console.log('video track found')
+                    const videoElement = document.createElement('video')
+                    videoElement.autoplay = true
+                    videoElement.playsInline = true
+                    publication.track.attach(videoElement)
+                    this.container!.appendChild(videoElement)
+                } else if (publication.track.kind === 'audio') {
+                    console.log(`Publication Audio Track ${publication.track.isEnabled}`)
+                    console.log('audio track found')
+                    const audioElement = document.createElement('audio')
+                    audioElement.autoplay = true
+                    // Optionally, mute the audio element if you want to prevent echo for local playback:
+                    // audioElement.muted = true
+                    publication.track.attach(audioElement)
+                    this.container!.appendChild(audioElement)
+                    audioElement.play().catch(e => console.error(e))
+                }
+            }
+        })
 
-    //         const tracks = await createLocalTracks({
-    //             audio: { deviceId: this.audioDeviceId || undefined },
-    //             video: { deviceId: this.videoDeviceId || undefined },
-    //         })
-    
-    //         const response = await fetch('/api/twilio-video-token', {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({ username: this.userName, roomName: this.roomName }),
-    //         })
-    
-    //         if (!response.ok) {
-    //             throw new Error('Failed to fetch Twilio token')
-    //         }
-    
-    //         const wallet = await response.json()
-    
-    //         this.room = await connect(wallet.token, {
-    //             name: this.roomName,
-    //             tracks,
-    //         })
+        return this.container
+    }
 
-    //     }catch(e){console.error(e)}
+    private unMuteAudio = () => {
+        if(!this.container) throw new Error('cannot unmute audio, html div does not exist')
+        
+        console.log('unmuting')
+        const audioElement = this.container.querySelector('audio')
+        audioElement!.muted = false
+        audioElement?.play().catch(e => console.error(e))
 
-    //     EventService.emit(VideoEvents.VIDEO_HUMAN_JOINED)
+    }
 
-    // }
+    private muteAudio = () => {
+        if(!this.container) throw new Error('cannot mute audio, html div does not exist')
+
+        console.log('muting')
+        const audioElement = this.container.querySelector('audio')
+        audioElement!.muted = true
+    }
 
     public endRoom = async () => {
 

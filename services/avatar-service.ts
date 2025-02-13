@@ -9,19 +9,13 @@ import StreamingAvatar, {
 import EventService from './event-service'
 import AvatarEvents from '../util/avatar-types'
 
-// export enum AvatarEvents {
-//     AVATAR_STARTED_SESSION = 'avatar-started',
-//     AVATAR_STREAM_READY = 'avatar-stream-ready',
-//     AVATER_END_SESSION = 'avatar-end-session'
-// }
-
 class AvatarServiceClass extends EventEmitter {
     private static instance: AvatarServiceClass
 
     private language: string = 'en'
 
     private stream: ((stream: MediaStream) => void) | undefined
-    private avatar: StreamingAvatar | null = null // Placeholder for avatar SDK instance
+    private avatar: StreamingAvatar | null = null
     private token: string = ''
 
     private isLoadingSession: boolean = false
@@ -42,12 +36,26 @@ class AvatarServiceClass extends EventEmitter {
 
         // register events
         EventService.on(AvatarEvents.AVATAR_INITIALIZE, () => {
-            this.initialize() // will post avatar-started-session
+            this.initialize()
         })
 
         EventService.on(AvatarEvents.AVATAR_END_SESSION, () => {
             this.endSession()
         })
+
+        EventService.on(AvatarEvents.AVATAR_CLOSE_SESSION, (sessionId) => {
+            this.closeSession(sessionId)
+        })
+
+        EventService.on(AvatarEvents.AVATAR_GET_SESSIONS, () => {
+            const sessions = this.getSessions()
+            EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (sessions))
+        })
+
+        EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () => {
+            this.handleSpeak('Hi there, how can I help you?')
+        })
+
     }
 
     // Static method to get the single instance
@@ -85,11 +93,15 @@ class AvatarServiceClass extends EventEmitter {
 
             EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, this.stream) // other services will listen for this 
         })
-        this.avatar.on(StreamingEvents.USER_START, (e) => {
-            // do nothing
+        this.avatar.on(StreamingEvents.USER_START, (e) => {})
+        this.avatar.on(StreamingEvents.USER_STOP, (e) => {})
+        this.avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+            console.log('avatar started talking')
+            EventService.emit(AvatarEvents.AVATAR_START_TALKING)
         })
-        this.avatar.on(StreamingEvents.USER_STOP, (e) => {
-            // do nothing
+        this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+            console.log('avatar stopped talking')
+            EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
         })
 
         try {
@@ -108,9 +120,6 @@ class AvatarServiceClass extends EventEmitter {
             this.isLoadingSession = false
         }
 
-        // EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION)
-
-        // return AvatarServiceClass.getInstance()
     }
 
     public getSessions = async () => {

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
 import { VideoEvents } from '@/util/video-types'
 import AvatarEvents from '@/util/avatar-types'
-import { connect, Room, LocalTrack, RemoteParticipant, RemoteVideoTrack, LocalParticipant, VideoTrack, Track, LocalTrackPublication } from 'twilio-video'
 
 
 const VideoRoom: React.FC = () => {
@@ -26,65 +25,26 @@ const VideoRoom: React.FC = () => {
     useEffect(() => {
 
       // register listeners
-      EventService.on(VideoEvents.VIDEO_ROOM_REQUESTED, (room) => {
+      EventService.on(VideoEvents.VIDEO_HTML_REQUESTED, (html: HTMLDivElement) => {
      
-        if(!room) throw new Error('no video room available')
+        if(!html) throw new Error('no video room element available')
+        remoteVideoRef.current!.innerHTML = ''
+        remoteVideoRef.current!.appendChild(html)
 
-          console.log(room)
+        // once this is done initiate the welcome message
+        EventService.emit(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE)
 
-
-        room.localParticipant.tracks.forEach((publication: LocalTrackPublication) => {
-          if(publication.track && publication.track.kind === 'video'){
-            console.log("VIDEO TRACK FOUND")
-            const videoElement = document.createElement('video')
-            videoElement.autoplay = true
-            videoElement.playsInline = true
-            publication.track.attach(videoElement)
-            remoteVideoRef.current!.innerHTML = ''
-            remoteVideoRef.current!.appendChild(videoElement)
-          }
-        })
-
-        // console.table(Array.from(room.))
-
-        // room.participants.forEach((participant: RemoteParticipant) => {
-
-        //   console.log(`PARTICIPANT ${participant}`)
-
-
-        //   participant.tracks.forEach((publication) => {
-        //     if(publication.isSubscribed){
-        //       const track = publication.track as RemoteVideoTrack
-        //       if(track.kind === 'video' && remoteVideoRef.current){
-        //         const videoElement = document.createElement('video')
-        //         videoElement.autoplay = true
-        //         videoElement.playsInline = true
-        //         track.attach(videoElement)
-        //         remoteVideoRef.current.innerHTML = ''
-        //         remoteVideoRef.current.appendChild(videoElement)
-        //       }
-        //     }
-        //   })
-        // })
-        // get the audio tracks etc
       })
 
       // get the room and the video/audio tracks and show on this page
-      EventService.emit(VideoEvents.VIDEO_REQUEST_ROOM)
+      EventService.emit(VideoEvents.VIDEO_REQUEST_HTML)
 
 
       // attach this user to room
 
-      
-
-
-
-      // EventService.emit(VideoEvents.)
 
       return () => {
 
-        // avatarServiceRef.current?.endSession() 
-        // videoServiceRef.current?.endRoom()
         console.log('unmounting the Video Room')
         EventService.emit(AvatarEvents.AVATAR_END_SESSION)
         EventService.emit(VideoEvents.VIDEO_END_SESSION)
@@ -94,15 +54,7 @@ const VideoRoom: React.FC = () => {
     }, [])
 
 
-    const endSession = async () => {
-
-      // if(avatarServiceRef.current && videoServiceRef.current){
-      //   console.log('calling end session')
-      //   await avatarServiceRef.current.endSession()
-      //   await videoServiceRef.current.endRoom()
-      // }
-
-      // then reroute to goodbye page
+  const endSession = async () => {
       router.push('/goodbye')
   }
    
@@ -112,10 +64,20 @@ const VideoRoom: React.FC = () => {
           <h1 className="text-center">Avatar Video Room</h1>
           <Row className="justify-content-center">
             <Col md={6}>
-              <div ref={remoteVideoRef} style={{ width: '100%', height: '400px', backgroundColor: '#000' }}>
+              <div ref={remoteVideoRef} style={
+                { 
+                  width: '100%', 
+                  minHeight: '400px', 
+                  backgroundColor: '#000' 
+                }}>
                 <p className="text-white text-center">Waiting for avatar...</p>
               </div>
-              <Button variant="secondary" onClick={endSession} className="w-100 mt-3">
+              <Button 
+                variant="secondary" 
+                onClick={endSession} 
+                className="mt-3"
+                style={{ width: 'auto'}}
+              >
                 End Session
               </Button>
             </Col>
