@@ -1,40 +1,25 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button,Container, Col, Form, InputGroup, ListGroup, Row } from 'react-bootstrap'
-import AvatarService from '@/services/avatar-service'
-import AvatarServiceClass from '@/services/avatar-service'
 import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
-import VideoServiceClass from '@/services/video-service'
 import AvatarEvents from '@/util/avatar-types'
 import { VideoEvents } from '@/util/video-types'
-import VideoService from '@/services/video-service'
 
 
 const WaitingRoom: React.FC = () => {
 
   const router = useRouter()
 
-    // state
-    // const [searchParams, setSearchParams] = useState<URLSearchParams>(new URLSearchParams())
     const [participants, setParticipants] = useState<number>(0)
     const [participantName, setParticipantName] = useState<string>('')
     const [userName, setUserName] = useState<string>('')
-    const [urlUserName, setUrlUserName] = useState<string>('')
     const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
     const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
     const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
     const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
 
-    const [isNavigatingToRoom, setIsNavigatingToRoom] = useState<boolean>(false)
-    // const [isGoodbye, setIsGoodbye] = useState<boolean>(false)
-    
-    const avatarServiceRef = useRef<typeof AvatarServiceClass | null>(null)
-    const videoServiceRef = useRef<typeof VideoService | null>(null)
-  
     const searchParams = useRef<URLSearchParams | null>(null)
-    // const [sessions, setSessions] = useState<object[]>([])
-  
 
     // Global Mounting    
     useEffect(() => {
@@ -83,32 +68,6 @@ const WaitingRoom: React.FC = () => {
           console.error('Error accessing media devices:', e)
       }
     }
-
-    // const initializeAvatar = async () => {
-    //   try {
-    //     avatarServiceRef.current = AvatarService
-    //   }catch(e){
-    //     console.error(e)
-    //   }
-    // }
-
-    // const initializeVideo = async () => {
-    //   try {
-    //     videoServiceRef.current = VideoService
-    //   }catch(e){
-    //     console.error(e)
-    //   }
-    // }
-
-    // const createRoom = () => {
-    //   console.log("CREATING ROOM")
-    //   EventService.emit(VideoEvents.VIDEO_CREATE_ROOM, {
-    //     audioDeviceId: selectedAudioDevice,
-    //     videoDeviceId: selectedVideoDevice,
-    //     userName: 'temp',
-    //     roomName: 'temp'
-    //   })
-    // }
 
     const joinRoom = async () => {
 
@@ -170,7 +129,6 @@ const WaitingRoom: React.FC = () => {
                 placeholder='Enter your username'
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                readOnly={!!urlUserName} // Make the field read-only if username is from the URL
               />
             </Form.Group>
 
@@ -218,7 +176,6 @@ const WaitingRoom: React.FC = () => {
               variant='secondary'
               onClick={endSession}
               className='w-100 mt-3'
-              // disabled={!avatarServiceRef.current} // Disable until all fields are filled
             >
               End Session
             </Button>
