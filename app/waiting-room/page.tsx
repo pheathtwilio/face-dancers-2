@@ -16,7 +16,7 @@ const WaitingRoom: React.FC = () => {
   const router = useRouter()
 
     // state
-    const [searchParams, setSearchParams] = useState<URLSearchParams>(new URLSearchParams())
+    // const [searchParams, setSearchParams] = useState<URLSearchParams>(new URLSearchParams())
     const [participants, setParticipants] = useState<number>(0)
     const [participantName, setParticipantName] = useState<string>('')
     const [userName, setUserName] = useState<string>('')
@@ -31,25 +31,19 @@ const WaitingRoom: React.FC = () => {
     
     const avatarServiceRef = useRef<typeof AvatarServiceClass | null>(null)
     const videoServiceRef = useRef<typeof VideoService | null>(null)
-
+  
+    const searchParams = useRef<URLSearchParams | null>(null)
     // const [sessions, setSessions] = useState<object[]>([])
   
 
     // Global Mounting    
     useEffect(() => {
 
-        if(typeof window !== 'undefined')
-          setSearchParams(new URLSearchParams(window.location.search))
+        if(typeof window !== 'undefined'){
+          searchParams.current = new URLSearchParams(window.location.search)
+        }
 
-
-        
         fetchDevices()
-
-        // initiate the avatar 
-        initializeAvatar()    
-        
-        // initialize video 
-        initializeVideo()
 
         // setup listeners
         EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
@@ -59,17 +53,18 @@ const WaitingRoom: React.FC = () => {
       
 
         // cleanup function
-        return () => {
-
-        } 
-        
+        return () => {} // no cleanup, the intent is to move to the next page  
+          
     }, [])
 
     // get the username from the params
     useEffect(() => {
-      setUrlUserName(searchParams.get('username') || '')
-      if(urlUserName)
-        setUserName(urlUserName)
+
+      if(searchParams.current){
+        const name = searchParams.current.get('username') || ''
+        setUserName(name)
+      }
+
     }, [searchParams])
 
 
@@ -89,21 +84,21 @@ const WaitingRoom: React.FC = () => {
       }
     }
 
-    const initializeAvatar = async () => {
-      try {
-        avatarServiceRef.current = AvatarService
-      }catch(e){
-        console.error(e)
-      }
-    }
+    // const initializeAvatar = async () => {
+    //   try {
+    //     avatarServiceRef.current = AvatarService
+    //   }catch(e){
+    //     console.error(e)
+    //   }
+    // }
 
-    const initializeVideo = async () => {
-      try {
-        videoServiceRef.current = VideoService
-      }catch(e){
-        console.error(e)
-      }
-    }
+    // const initializeVideo = async () => {
+    //   try {
+    //     videoServiceRef.current = VideoService
+    //   }catch(e){
+    //     console.error(e)
+    //   }
+    // }
 
     // const createRoom = () => {
     //   console.log("CREATING ROOM")
@@ -116,24 +111,20 @@ const WaitingRoom: React.FC = () => {
     // }
 
     const joinRoom = async () => {
-        console.log('Joining Room')
-        // setIsNavigatingToRoom(true)
-        // isGoodbye = true
 
-        // tell the video service to add human to room
+        // add this participant to the video room too!
 
-        // reroute to video room
+        // also add the audio track to the llm service
+
         router.push('/video-room')
     }
 
     const endSession = async () => {
 
-        if(avatarServiceRef.current){
-          console.log('calling end session')
-          EventService.emit(AvatarEvents.AVATAR_END_SESSION)
-          EventService.emit(VideoEvents.VIDEO_END_SESSION)
-        }
-
+        console.log('calling end session')
+        EventService.emit(AvatarEvents.AVATAR_END_SESSION)
+        EventService.emit(VideoEvents.VIDEO_END_SESSION)
+  
         // then reroute to goodbye page
         router.push('/goodbye')
     }

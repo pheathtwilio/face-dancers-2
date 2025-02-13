@@ -34,9 +34,6 @@ export async function POST(req: Request){
             throw new Error(`Failed to create room: ${await response.text()}`)
 
         const roomData = await response.json()
-
-        console.log(`ROOMDATA: ${JSON.stringify(roomData)}`)
-        console.log(VideoEvents.VIDEO_ROOM_CREATED)
         return new Response(JSON.stringify({ room: roomData }), { status: 200 })
 
     } catch (e) {
