@@ -19,12 +19,10 @@ class STTServiceClass extends EventEmitter {
             this.audioDeviceId = audioDeviceId
             this.setStreamByAudioDeviceId(audioDeviceId)
 
-            if(!this.stream) throw new Error('no audio stream is set')
-            this.setMediaRecorder(this.stream)
-            
-            if(!this.mediaRecorder) throw new Error('no media recorder has been instantiated')
-            this.initializeEventListeners(this.mediaRecorder)
+        })
 
+        EventService.on(STTEvents.STT_END_SESSION, () => {
+            this.endSession()
         })
         
     }
@@ -45,23 +43,47 @@ class STTServiceClass extends EventEmitter {
 
         this.stream = await navigator.mediaDevices.getUserMedia(constraints)
 
-    }
+        this.mediaRecorder = new MediaRecorder(this.stream)
 
-    private setMediaRecorder = (stream: MediaStream) => {
-        this.mediaRecorder = new MediaRecorder(stream)
-    }
+        this.mediaRecorder.start(500)
 
-    private initializeEventListeners = (mediaRecorder: MediaRecorder) => {
-
-        mediaRecorder.ondataavailable = (event) => {
+        this.mediaRecorder.ondataavailable = (event) => {
             EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
         }
 
-        mediaRecorder.onstop = () => {
-            mediaRecorder.stop()
+        this.mediaRecorder.onstop = () => {
+            console.log(`STOPPING MEDIA RECORDER`)
+            this.mediaRecorder?.stop()
         }
 
+        this.mediaRecorder.onerror = (e) => {console.error(e)}
+
     }
+
+    private endSession = () => {
+        if(this.mediaRecorder){
+            this.mediaRecorder.stop()
+        }
+    }
+
+    // private setMediaRecorder = (stream: MediaStream) => {
+    //     this.mediaRecorder = new MediaRecorder(stream)
+    // }
+
+    // private initializeEventListeners = (mediaRecorder: MediaRecorder) => {
+
+    //     console.log(`INITIALIZING ${mediaRecorder}`)
+
+    //     mediaRecorder.ondataavailable = (event) => {
+    //         console.log(`DATA AVAILABLE ${event}`)
+    //         EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
+    //     }
+
+    //     mediaRecorder.onstop = () => {
+    //         mediaRecorder.stop()
+    //     }
+
+    // }
 
 }
 

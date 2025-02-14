@@ -19,7 +19,7 @@ class DeepgramServiceClass extends EventEmitter {
     private deepgram: DeepgramClient | null = null
     private client: ListenLiveClient | undefined = undefined
     private options: DeepgramSTTOptions | null = {
-        apiKey: process.env.DEEPGRAM_API_KEY || 'undefined',
+        apiKey: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || 'undefined',
         config: {
             language: 'en',
             punctuate: true,
@@ -30,6 +30,11 @@ class DeepgramServiceClass extends EventEmitter {
     private constructor() {
         super()
         this.initialize()
+
+        EventService.on(DeepgramEvents.DEEPGRAM_END_SESSION, () => {
+            this.endSession()
+        })
+        
     }
 
     // Singleton pattern to ensure a single instance of the VideoService
@@ -48,7 +53,7 @@ class DeepgramServiceClass extends EventEmitter {
         this.client?.on(LiveTranscriptionEvents.Open, () => {
 
             // register listeners from STT
-            EventService.on(STTEvents.STT_ATTACH_AUDIO_TRACK, (data) => {
+            EventService.on(STTEvents.STT_SEND_SPEECH_DATA, (data) => {
                 this.client?.send(data)
             })
 
@@ -56,7 +61,7 @@ class DeepgramServiceClass extends EventEmitter {
 
         let is_finals: string[] = []
         this.client?.on(LiveTranscriptionEvents.Transcript, (data) => {
-            
+
             const sentence = data.channel.alternatives[0].transcript
 
             if(sentence.length == 0) return // ignore empty transcripts
@@ -68,6 +73,7 @@ class DeepgramServiceClass extends EventEmitter {
                 if(data.speech_final){
                     const utterance = is_finals.join(' ')
                     is_finals = []
+                    console.log(`UTTERANCE ${utterance}`)
                     EventService.emit(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, utterance)
                 }else{
                 // good for real-time captioning
@@ -82,6 +88,11 @@ class DeepgramServiceClass extends EventEmitter {
         this.client?.on(LiveTranscriptionEvents.Error, (e) => {console.error(e); this.client?.disconnect()})
 
     }
+
+    private endSession = () => {
+
+    }
+
 }
 
 const DeepgramService = DeepgramServiceClass.getInstance()

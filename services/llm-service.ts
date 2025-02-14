@@ -13,14 +13,15 @@ class LLMServiceClass extends EventEmitter {
     private constructor() {
         super()
 
-        this.openAI = new OpenAI()
+        this.openAI = new OpenAI(
+            {
+                apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+                dangerouslyAllowBrowser: true
+            })
 
         EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
             // get the chat completion for the utterance
-            const completion = this.completion(utterance)
-
-            // emit the completion to the Avatar
-            EventService.emit(AvatarEvents.AVATAR_SAY, completion)
+            this.completion(utterance)
         })
     }
 
@@ -48,7 +49,9 @@ class LLMServiceClass extends EventEmitter {
         })
 
         if(!completion) throw new Error('no completion was created')
-        return completion.choices[0].message.content
+        // emit the completion to the Avatar
+        console.log(`COMPLETION ${completion.choices[0].message.content}`)
+        EventService.emit(AvatarEvents.AVATAR_SAY, completion.choices[0].message.content)
     }
 
 }

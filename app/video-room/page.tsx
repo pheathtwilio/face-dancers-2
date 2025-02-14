@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
 import { VideoEvents } from '@/util/video-types'
 import AvatarEvents from '@/util/avatar-types'
+import STTEvents from '@/util/stt-types'
+import DeepgramEvents from '@/util/deepgram-types'
 
 
 const VideoRoom: React.FC = () => {
@@ -48,7 +50,8 @@ const VideoRoom: React.FC = () => {
         console.log('unmounting the Video Room')
         EventService.emit(AvatarEvents.AVATAR_END_SESSION)
         EventService.emit(VideoEvents.VIDEO_END_SESSION)
-        
+        EventService.emit(STTEvents.STT_END_SESSION)
+        EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
       }
         
     }, [])
