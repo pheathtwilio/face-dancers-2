@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
 import AvatarEvents from '@/util/avatar-types'
 import { VideoEvents } from '@/util/video-types'
+import DeepgramEvents from '@/util/deepgram-types'
+import STTEvents from '@/util/stt-types'
 
 
 const WaitingRoom: React.FC = () => {
@@ -18,6 +20,7 @@ const WaitingRoom: React.FC = () => {
     const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
     const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
     const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
+    const [stream, setStream] = useState<MediaStream | null>(null)
 
     const searchParams = useRef<URLSearchParams | null>(null)
 
@@ -58,9 +61,10 @@ const WaitingRoom: React.FC = () => {
 
       try {
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
 
+        setStream(localStream)
         setAudioDevices(devices.filter((device) => device.kind === 'audioinput'));
         setVideoDevices(devices.filter((device) => device.kind === 'videoinput'))
 
@@ -72,8 +76,10 @@ const WaitingRoom: React.FC = () => {
     const joinRoom = async () => {
 
         // add this participant to the video room too!
+        EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDevice, selectedVideoDevice)
 
         // also add the audio track to the llm service
+        EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDevice)
 
         router.push('/video-room')
     }

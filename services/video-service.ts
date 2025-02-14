@@ -8,9 +8,6 @@ class VideoServiceClass extends EventEmitter {
 
     private static instance: VideoServiceClass
 
-    // private audioDeviceId: string = ''
-    // private videoDeviceId: string = ''
-    // private userName: string = ''
     private roomName: string = 'face-dancers' // want this room name to be the same all the time
     private room: TwilioVideoRoom | null = null
 
@@ -20,7 +17,9 @@ class VideoServiceClass extends EventEmitter {
 
     private roomPrefs: RoomPreferences = {
         UniqueName: this.roomName,
-        EmptyRoomTimeout: '5' // 5 minutes
+        EmptyRoomTimeout: '5', // 5 minutes
+        recordParticipantsOnConnect: true,
+        maxParticipants: 2
     }
 
     private constructor() {
@@ -28,18 +27,12 @@ class VideoServiceClass extends EventEmitter {
 
         // register listeners
         EventService.on(AvatarEvents.AVATAR_STARTED_SESSION, (stream: MediaStream) => {
-            // create a room and join the avatars stream to the room - check if room already exists
             this.createRoomFromStream('Sofie', this.roomPrefs, stream)
-            // once complete emit an event that a room has been started and how many participants are in the room
         })
 
         EventService.on(VideoEvents.VIDEO_END_SESSION, () => {
             this.endRoom()
         })
-
-        // EventService.on(VideoEvents.VIDEO_JOIN_HUMAN_TO_ROOM, (params: VideoRoomParameters) => {
-        //     // this.joinHumanToRoom(params)
-        // })
 
         EventService.on(VideoEvents.VIDEO_REQUEST_HTML, () => {
             console.log('video room html requested')
@@ -54,6 +47,10 @@ class VideoServiceClass extends EventEmitter {
 
         EventService.on(AvatarEvents.AVATAR_STOP_TALKING, () => {
             this.muteAudio()
+        })
+
+        EventService.on(VideoEvents.VIDEO_JOIN_PARTICIPANT, (username, audioDeviceId, videoDeviceId) => {
+            this.joinParticipant(username, audioDeviceId, videoDeviceId)
         })
 
     }
@@ -124,8 +121,6 @@ class VideoServiceClass extends EventEmitter {
                     console.log('audio track found')
                     const audioElement = document.createElement('audio')
                     audioElement.autoplay = true
-                    // Optionally, mute the audio element if you want to prevent echo for local playback:
-                    // audioElement.muted = true
                     publication.track.attach(audioElement)
                     this.container!.appendChild(audioElement)
                     audioElement.play().catch(e => console.error(e))
@@ -134,6 +129,37 @@ class VideoServiceClass extends EventEmitter {
         })
 
         return this.container
+    }
+
+    private joinParticipant = async (
+        userName: string,
+        audioDeviceId: string, 
+        videoDeviceId: string
+    ) => {
+
+        const tokenFetch = await (fetch('api/twilio-video-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json'},
+            body: JSON.stringify({ userName: userName, roomName: this.roomName }) // userName and roomName
+        }))
+ 
+        const { token } = await tokenFetch.json()
+        if(!token) throw new Error('Failed to retrieve JWT token')
+
+        const constraints = {
+            audio: {deviceId: audioDeviceId},
+            video: {deviceId: videoDeviceId}
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        const tracks = stream.getTracks()
+
+        await connect(token, {
+            name: this.roomName,
+            tracks: tracks
+        })
+
+        console.log('video-participant-joined')
     }
 
     private unMuteAudio = () => {
@@ -174,12 +200,6 @@ class VideoServiceClass extends EventEmitter {
         }
 
     }
-
-
-    public endSession = async () => {
-
-    }
-
 
 }
 

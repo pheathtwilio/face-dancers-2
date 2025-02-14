@@ -1,4 +1,6 @@
+import DeepgramEvents from '@/util/deepgram-types'
 import EventEmitter from 'events'
+import EventService from './event-service'
 
 class LLMServiceClass extends EventEmitter {
 
@@ -6,6 +8,12 @@ class LLMServiceClass extends EventEmitter {
 
     private constructor() {
         super()
+
+        EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
+            // get the chat completion for the utterance
+
+            // emit the utterance to the Avatar
+        })
     }
 
     // Singleton pattern to ensure a single instance of the VideoService

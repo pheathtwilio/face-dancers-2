@@ -7,7 +7,9 @@ export interface VideoRoomParameters {
 
 export interface RoomPreferences {
         UniqueName: string,
-        EmptyRoomTimeout: string
+        EmptyRoomTimeout: string,
+        recordParticipantsOnConnect: boolean,
+        maxParticipants: number
 }
 
 export enum VideoEvents {
@@ -15,8 +17,6 @@ export enum VideoEvents {
     VIDEO_ROOM_CREATED = 'video-room-created',
     VIDEO_JOIN_PARTICIPANT = 'video-join-participant',
     VIDEO_PARTICIPANT_JOINED = 'video-participant-joined',
-    VIDEO_JOIN_HUMAN_TO_ROOM = 'video-join-human-to-room',
-    VIDEO_HUMAN_JOINED = 'video-human-joined',
     VIDEO_END_SESSION = 'video-end-session',
     VIDEO_SESSION_ENDED = 'video-session-ended',
     VIDEO_REQUEST_ROOM = 'video-request-room',
