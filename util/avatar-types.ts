@@ -9,7 +9,8 @@ enum AvatarEvents {
     AVATAR_SESSION_ENDED = 'avatar-session-ended',
     AVATAR_SEND_WELCOME_MESSAGE = 'avatar-send-welcome-message',
     AVATAR_START_TALKING = 'avatar-start-talking',
-    AVATAR_STOP_TALKING = 'avatar-stop-talking'
+    AVATAR_STOP_TALKING = 'avatar-stop-talking',
+    AVATAR_SAY = 'avatar-say'
 }
 
 export default AvatarEvents

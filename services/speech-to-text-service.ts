@@ -29,7 +29,7 @@ class STTServiceClass extends EventEmitter {
         
     }
 
-    // Singleton pattern to ensure a single instance of the VideoService
+    // Singleton pattern to ensure a single instance of the STTService
     public static getInstance(): STTServiceClass {
         if (!STTServiceClass.instance) {
             STTServiceClass.instance = new STTServiceClass()

@@ -56,6 +56,10 @@ class AvatarServiceClass extends EventEmitter {
             this.handleSpeak('Hi there, how can I help you?')
         })
 
+        EventService.on(AvatarEvents.AVATAR_SAY, (words) => {
+            this.handleSpeak(words)
+        })
+
     }
 
     // Static method to get the single instance
