@@ -3,7 +3,7 @@ import EventEmitter from 'events'
 import EventService from './event-service'
 import AvatarEvents from '@/util/avatar-types'
 import OpenAI from 'openai'
-import Config from '@/app/config/config'
+import { Config } from '@/app/config/config'
 
 class LLMServiceClass extends EventEmitter {
 
@@ -39,7 +39,7 @@ class LLMServiceClass extends EventEmitter {
         const completion = await this.openAI?.chat.completions.create({
             messages: [
                 {
-                    role: 'system', content: Config.prompt
+                    role: 'system', content: Config.useCase.prompt
                 },
                 {
                     role: 'user', content: utterance
@@ -49,8 +49,6 @@ class LLMServiceClass extends EventEmitter {
         })
 
         if(!completion) throw new Error('no completion was created')
-        // emit the completion to the Avatar
-        console.log(`COMPLETION ${completion.choices[0].message.content}`)
         EventService.emit(AvatarEvents.AVATAR_SAY, completion.choices[0].message.content)
     }
 

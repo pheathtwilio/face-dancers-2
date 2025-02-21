@@ -62,6 +62,8 @@ class DeepgramServiceClass extends EventEmitter {
         let is_finals: string[] = []
         this.client?.on(LiveTranscriptionEvents.Transcript, (data) => {
 
+            // console.log(`TRANSCRIPT EVENT ${JSON.stringify(data)}`)
+
             const sentence = data.channel.alternatives[0].transcript
 
             if(sentence.length == 0) return // ignore empty transcripts
@@ -73,7 +75,6 @@ class DeepgramServiceClass extends EventEmitter {
                 if(data.speech_final){
                     const utterance = is_finals.join(' ')
                     is_finals = []
-                    console.log(`UTTERANCE ${utterance}`)
                     EventService.emit(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, utterance)
                 }else{
                 // good for real-time captioning

@@ -37,6 +37,12 @@ class STTServiceClass extends EventEmitter {
 
     private setStreamByAudioDeviceId = async (audioDeviceId: string) => {
 
+        let audioContext = new window.AudioContext 
+        if(audioContext.state === 'suspended' || audioContext.state === 'closed'){
+            await audioContext.resume()
+            console.log('Audio Context Resumed')
+        }
+
         const constraints = {
             audio: { deviceId: audioDeviceId }
         }
@@ -45,6 +51,8 @@ class STTServiceClass extends EventEmitter {
 
         this.mediaRecorder = new MediaRecorder(this.stream)
 
+        console.log(`MediaRecorder: ${this.mediaRecorder}`)
+
         this.mediaRecorder.start(500)
 
         this.mediaRecorder.ondataavailable = (event) => {
@@ -52,7 +60,6 @@ class STTServiceClass extends EventEmitter {
         }
 
         this.mediaRecorder.onstop = () => {
-            console.log(`STOPPING MEDIA RECORDER`)
             this.mediaRecorder?.stop()
         }
 
@@ -65,25 +72,6 @@ class STTServiceClass extends EventEmitter {
             this.mediaRecorder.stop()
         }
     }
-
-    // private setMediaRecorder = (stream: MediaStream) => {
-    //     this.mediaRecorder = new MediaRecorder(stream)
-    // }
-
-    // private initializeEventListeners = (mediaRecorder: MediaRecorder) => {
-
-    //     console.log(`INITIALIZING ${mediaRecorder}`)
-
-    //     mediaRecorder.ondataavailable = (event) => {
-    //         console.log(`DATA AVAILABLE ${event}`)
-    //         EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
-    //     }
-
-    //     mediaRecorder.onstop = () => {
-    //         mediaRecorder.stop()
-    //     }
-
-    // }
 
 }
 

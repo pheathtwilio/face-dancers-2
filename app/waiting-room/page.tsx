@@ -1,11 +1,10 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button,Container, Col, Form, InputGroup, ListGroup, Row } from 'react-bootstrap'
+import { Alert, Button,Container, Col, Form, InputGroup, Row } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
 import AvatarEvents from '@/util/avatar-types'
 import { VideoEvents } from '@/util/video-types'
-import DeepgramEvents from '@/util/deepgram-types'
 import STTEvents from '@/util/stt-types'
 
 
@@ -36,7 +35,7 @@ const WaitingRoom: React.FC = () => {
         // setup listeners
         EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
           setParticipants(participants+1)
-          // setParticipantName(object.name)
+          // setParticipantName(userName)
         })
       
 
@@ -61,7 +60,6 @@ const WaitingRoom: React.FC = () => {
 
       try {
 
-        // const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
 
         // setStream(localStream)
@@ -75,10 +73,7 @@ const WaitingRoom: React.FC = () => {
 
     const joinRoom = async () => {
 
-        // add this participant to the video room too!
         EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDevice, selectedVideoDevice)
-
-        // also add the audio track to the llm service
         EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDevice)
 
         router.push('/video-room')
@@ -89,8 +84,6 @@ const WaitingRoom: React.FC = () => {
         console.log('calling end session')
         EventService.emit(AvatarEvents.AVATAR_END_SESSION)
         EventService.emit(VideoEvents.VIDEO_END_SESSION)
-  
-        // then reroute to goodbye page
         router.push('/goodbye')
     }
 

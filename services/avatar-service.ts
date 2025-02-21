@@ -8,6 +8,7 @@ import StreamingAvatar, {
   } from '@heygen/streaming-avatar'
 import EventService from './event-service'
 import AvatarEvents from '../util/avatar-types'
+import { Config } from '@/app/config/config'
 
 class AvatarServiceClass extends EventEmitter {
     private static instance: AvatarServiceClass
@@ -20,15 +21,6 @@ class AvatarServiceClass extends EventEmitter {
 
     private isLoadingSession: boolean = false
     private isLoadingRepeat: boolean = false
-
-    private AVATARS = [
-        { avatar_id: 'Eric_public_pro2_20230608', name: 'Edward in Blue Shirt' },
-        { avatar_id: 'Tyler-incasualsuit-20220721', name: 'Tyler in Casual Suit' },
-        { avatar_id: 'Anna_public_3_20240108', name: 'Anna in Brown T-shirt' },
-        { avatar_id: 'Susan_public_2_20240328', name: 'Susan in Black Shirt' },
-        { avatar_id: 'josh_lite3_20230714', name: 'Joshua Heygen CEO' },
-        { avatar_id: '37f4d912aa564663a1cf8d63acd0e1ab', name: 'Sofia'}
-    ]
 
     // Private constructor prevents external instantiation
     private constructor() {
@@ -53,7 +45,7 @@ class AvatarServiceClass extends EventEmitter {
         })
 
         EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () => {
-            this.handleSpeak('Hi there, how can I help you?')
+            this.handleSpeak(Config.useCase.greeting)
         })
 
         EventService.on(AvatarEvents.AVATAR_SAY, (words) => {
@@ -112,7 +104,7 @@ class AvatarServiceClass extends EventEmitter {
 
             const response = await this.avatar.createStartAvatar({
                 quality: AvatarQuality.High,
-                avatarName: this.AVATARS[5].avatar_id,
+                avatarName: Config.useCase.avatar_id,
                 voice: { rate: 1.5, emotion: VoiceEmotion.EXCITED },
                 language: this.language,
                 disableIdleTimeout: true
