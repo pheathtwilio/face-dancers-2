@@ -1,4 +1,4 @@
-const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
+const { TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 
 export async function GET(req: Request){
 

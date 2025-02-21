@@ -34,11 +34,7 @@ export default function Home() {
     }
 
     if(avatarServiceRef.current){
-      
       EventService.emit(AvatarEvents.AVATAR_INITIALIZE)
-      // EventService.on(AvatarEvents.AVATAR_STARTED_SESSION, (stream: MediaStream) => {
-
-      // })
     }
       
   }, [])

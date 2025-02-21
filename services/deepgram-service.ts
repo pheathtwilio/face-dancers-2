@@ -61,9 +61,6 @@ class DeepgramServiceClass extends EventEmitter {
 
         let is_finals: string[] = []
         this.client?.on(LiveTranscriptionEvents.Transcript, (data) => {
-
-            // console.log(`TRANSCRIPT EVENT ${JSON.stringify(data)}`)
-
             const sentence = data.channel.alternatives[0].transcript
 
             if(sentence.length == 0) return // ignore empty transcripts

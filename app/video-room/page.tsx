@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button, Container, Col, Row } from 'react-bootstrap'
 import AvatarService from '@/services/avatar-service'
 import VideoService from '@/services/video-service'
@@ -15,10 +15,6 @@ const VideoRoom: React.FC = () => {
 
   const avatarServiceRef = useRef<typeof AvatarService | null>(null)
   const videoServiceRef = useRef<typeof VideoService | null>(null)
-
-  // const [isGoodbye, setIsGoodbye] = useState<boolean>(false)
-
-  // const [room, setRoom] = useState<Room | null>(null)
   const remoteVideoRef = useRef<HTMLDivElement | null>(null)
 
   const router = useRouter()
@@ -41,12 +37,7 @@ const VideoRoom: React.FC = () => {
       // get the room and the video/audio tracks and show on this page
       EventService.emit(VideoEvents.VIDEO_REQUEST_HTML)
 
-
-      // attach this user to room
-
-
       return () => {
-
         console.log('unmounting the Video Room')
         EventService.emit(AvatarEvents.AVATAR_END_SESSION)
         EventService.emit(VideoEvents.VIDEO_END_SESSION)

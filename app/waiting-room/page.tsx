@@ -61,8 +61,6 @@ const WaitingRoom: React.FC = () => {
       try {
 
         const devices = await navigator.mediaDevices.enumerateDevices();
-
-        // setStream(localStream)
         setAudioDevices(devices.filter((device) => device.kind === 'audioinput'));
         setVideoDevices(devices.filter((device) => device.kind === 'videoinput'))
 

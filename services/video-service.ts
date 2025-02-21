@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
-import { VideoRoomParameters, VideoEvents, RoomPreferences, TwilioVideoRoom } from '@/util/video-types'
-import { connect, createLocalTracks, LocalAudioTrack, LocalTrackPublication, LocalVideoTrack, Room } from 'twilio-video'
+import { VideoEvents, RoomPreferences, TwilioVideoRoom } from '@/util/video-types'
+import { connect, LocalTrackPublication, Room } from 'twilio-video'
 import AvatarEvents from '@/util/avatar-types'
 import EventService from './event-service'
 
