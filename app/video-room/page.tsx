@@ -1,8 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import { Button, Card, Container, Col, Row } from 'react-bootstrap'
-import AvatarService from '@/services/avatar-service'
-import VideoService from '@/services/video-service'
 import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
 import { VideoEvents } from '@/util/video-types'
@@ -13,8 +11,6 @@ import DeepgramEvents from '@/util/deepgram-types'
 
 const VideoRoom: React.FC = () => {
 
-  const avatarServiceRef = useRef<typeof AvatarService | null>(null)
-  const videoServiceRef = useRef<typeof VideoService | null>(null)
   const remoteVideoRef = useRef<HTMLDivElement | null>(null)
 
   const router = useRouter()
@@ -22,23 +18,22 @@ const VideoRoom: React.FC = () => {
     // Global Mounting    
     useEffect(() => {
 
-      // register listeners
-      EventService.on(VideoEvents.VIDEO_HTML_REQUESTED, (html: HTMLDivElement) => {
-     
-        if(!html) throw new Error('no video room element available')
-        remoteVideoRef.current!.innerHTML = ''
-        remoteVideoRef.current!.appendChild(html)
+      const handleVideoHTMLRequested = (html: HTMLDivElement) => {
+        const interval = setInterval(() => {
+          if(remoteVideoRef.current){
+            remoteVideoRef.current.innerHTML = ''
+            remoteVideoRef.current.appendChild(html)
+            EventService.emit(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE)
+            clearInterval(interval)
+          }
+        }, 100)
+      }
 
-        // once this is done initiate the welcome message
-        EventService.emit(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE)
-
-      })
-
-      // get the room and the video/audio tracks and show on this page
+      EventService.on(VideoEvents.VIDEO_HTML_REQUESTED, handleVideoHTMLRequested)
       EventService.emit(VideoEvents.VIDEO_REQUEST_HTML)
 
       return () => {
-        console.log('unmounting the Video Room')
+        EventService.off(VideoEvents.VIDEO_HTML_REQUESTED, handleVideoHTMLRequested)
         EventService.emit(AvatarEvents.AVATAR_END_SESSION)
         EventService.emit(VideoEvents.VIDEO_END_SESSION)
         EventService.emit(STTEvents.STT_END_SESSION)
