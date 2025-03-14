@@ -51,6 +51,10 @@ class STTServiceClass extends EventEmitter {
 
         this.stream = await navigator.mediaDevices.getUserMedia(constraints)
 
+        if(this.mediaRecorder){
+            this.mediaRecorder.stop()       
+            this.mediaRecorder = null
+        }
         this.mediaRecorder = new MediaRecorder(this.stream)
 
         this.mediaRecorder.start(500)
