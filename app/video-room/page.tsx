@@ -53,20 +53,20 @@ const VideoRoom: React.FC = () => {
   }
    
     return (
-      <Container className="mt-5 d-flex justify-content-center">
-        <Card className="p-4 shadow-sm border-0" style={{ maxWidth: "800px", width: "100%" }}>
-          <Card.Body>
-            <h1 className="text-center fw-bold mb-4">Avatar Video Room</h1>
-            <Row className="justify-content-center">
-              <Col>
+      <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
+        <Row className="w-100 justify-content-center">
+          <Col md={8} lg={6}>
+            <Card className="p-4 shadow-sm border-0">
+              <Card.Body>
+                <h1 className="text-center fw-bold mb-4">Avatar Video Room</h1>
                 <div 
                   ref={remoteVideoRef} 
-                  className="d-flex align-items-center justify-content-center rounded bg-dark"
+                  className="d-flex align-items-center justify-content-center bg-dark rounded"
                   style={{ 
                     width: '100%', 
                     minHeight: '400px', 
-                    overflow: 'hidden', 
-                    borderRadius: '12px' 
+                    overflow: 'hidden',
+                    borderRadius: '12px'
                   }}
                 >
                   <p className="text-white text-center m-0 fw-semibold">Waiting for avatar...</p>
@@ -78,10 +78,10 @@ const VideoRoom: React.FC = () => {
                 >
                   End Session
                 </Button>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
       </Container>
     )
 }

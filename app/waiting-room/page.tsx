@@ -117,87 +117,90 @@ const WaitingRoom: React.FC = () => {
 
   return (
       <div className='waiting-room-container'>
-          <Container className='mt-5'>
-          <h1 className='text-center mb-4 fw-bold'>Waiting Room</h1>
-          <Row className='justify-content-center'>
-            <Col md={6}>
+          <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
+          <Row className="w-100 justify-content-center">
+            <Col md={8} lg={6}>
               <Card className="p-4 shadow-sm border-0">
-                {participants < 1 ? (
-                  <Alert variant='warning' className='text-center fw-semibold'>
-                    Waiting for more participants to join...
-                  </Alert>
-                ) : (
-                  <Alert variant='dark' className='text-center fw-semibold'>
-                    Participant <strong>{participantName}</strong> has joined, you can now enter the room
-                  </Alert>
-                )}
+                <Card.Body>
+                  <h1 className="text-center fw-bold mb-4">Waiting Room</h1>
 
-                <Form>
-                  <Form.Group className='mb-3'>
-                    <Form.Label className="fw-semibold">Details</Form.Label>
-                    <InputGroup>
-                      <InputGroup.Text>Participants</InputGroup.Text>
-                      <Form.Control value={participants.toString()} readOnly className="bg-light" />
-                    </InputGroup>
-                  </Form.Group>
+                  {participants < 1 ? (
+                    <Alert variant='warning' className='text-center fw-semibold'>
+                      Waiting for more participants to join...
+                    </Alert>
+                  ) : (
+                    <Alert variant='dark' className='text-center fw-semibold'>
+                      Participant <strong>{participantName}</strong> has joined, you can now enter the room.
+                    </Alert>
+                  )}
 
-                  <Form.Group className='mb-3'>
-                    <Form.Label className="fw-semibold">Username</Form.Label>
-                    <Form.Control
-                      type='text'
-                      placeholder='Enter your username'
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                    />
-                  </Form.Group>
+                  <Form>
+                    <Form.Group className='mb-3'>
+                      <Form.Label className="fw-semibold">Details</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text>Participants</InputGroup.Text>
+                        <Form.Control value={participants.toString()} readOnly className="bg-light" />
+                      </InputGroup>
+                    </Form.Group>
 
-                  <Form.Group className='mb-3'>
-                    <Form.Label className="fw-semibold">Audio Device</Form.Label>
-                    <Form.Select
-                      value={selectedAudioDevice}
-                      onChange={(e) => setSelectedAudioDevice(e.target.value)}
+                    <Form.Group className='mb-3'>
+                      <Form.Label className="fw-semibold">Username</Form.Label>
+                      <Form.Control
+                        type='text'
+                        placeholder='Enter your username'
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                      />
+                    </Form.Group>
+
+                    <Form.Group className='mb-3'>
+                      <Form.Label className="fw-semibold">Audio Device</Form.Label>
+                      <Form.Select
+                        value={selectedAudioDevice}
+                        onChange={(e) => setSelectedAudioDevice(e.target.value)}
+                      >
+                        <option value=''>Select Audio Device</option>
+                        {audioDevices.map((device) => (
+                          <option key={device.deviceId} value={device.deviceId}>
+                            {device.label || `Microphone ${device.deviceId.substring(0, 6)}`}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+
+                    <Form.Group className='mb-3'>
+                      <Form.Label className="fw-semibold">Video Device</Form.Label>
+                      <Form.Select
+                        value={selectedVideoDevice}
+                        onChange={(e) => setSelectedVideoDevice(e.target.value)}
+                      >
+                        <option value=''>Select Video Device</option>
+                        {videoDevices.map((device) => (
+                          <option key={device.deviceId} value={device.deviceId}>
+                            {device.label || `Camera ${device.deviceId}`}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+
+                    <Button
+                      variant='dark'
+                      onClick={joinRoom}
+                      className='w-100 btn-lg'
+                      disabled={!userName || !selectedAudioDevice || !selectedVideoDevice || participants < 1}
                     >
-                      <option value=''>Select Audio Device</option>
-                      {audioDevices.map((device) => (
-                        <option key={device.deviceId} value={device.deviceId}>
-                          {device.label || `Microphone ${device.deviceId.substring(0, 6)}`}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
+                      Join Room
+                    </Button>
 
-                  <Form.Group className='mb-3'>
-                    <Form.Label className="fw-semibold">Video Device</Form.Label>
-                    <Form.Select
-                      value={selectedVideoDevice}
-                      onChange={(e) => setSelectedVideoDevice(e.target.value)}
+                    <Button
+                      variant='secondary'
+                      onClick={endSession}
+                      className='w-100 btn-lg mt-3'
                     >
-                      <option value=''>Select Video Device</option>
-                      {videoDevices.map((device) => (
-                        <option key={device.deviceId} value={device.deviceId}>
-                          {device.label || `Camera ${device.deviceId}`}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-
-                  <Button
-                    variant='dark'
-                    onClick={joinRoom}
-                    className='w-100 btn-lg'
-                    disabled={!userName || !selectedAudioDevice || !selectedVideoDevice || participants < 1}
-                  >
-                    Join Room
-                  </Button>
-
-                  <Button
-                    variant='secondary'
-                    onClick={endSession}
-                    className='w-100 btn-lg mt-3'
-                  >
-                    End Session
-                  </Button>
-                </Form>
+                      End Session
+                    </Button>
+                  </Form>
+                </Card.Body>
               </Card>
             </Col>
           </Row>
