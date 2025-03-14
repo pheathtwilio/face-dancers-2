@@ -63,6 +63,8 @@ class DeepgramServiceClass extends EventEmitter {
         this.client?.on(LiveTranscriptionEvents.Transcript, (data) => {
             const sentence = data.channel.alternatives[0].transcript
 
+            console.log(`DEEPGRAM_TRANSCRIPTION: ${sentence}`)
+
             if(sentence.length == 0) return // ignore empty transcripts
 
             if(data.is_final){
@@ -83,7 +85,15 @@ class DeepgramServiceClass extends EventEmitter {
         })
 
         this.client?.on(LiveTranscriptionEvents.Close, () => {this.client?.disconnect()})
-        this.client?.on(LiveTranscriptionEvents.Error, (e) => {console.error(e); this.client?.disconnect()})
+        this.client?.on(LiveTranscriptionEvents.Error, (e) => {
+
+            console.error(e)
+            try{
+                this.client?.removeAllListeners()
+                this.client?.disconnect()
+            }catch(e){console.error(e)}
+            
+        })
 
     }
 

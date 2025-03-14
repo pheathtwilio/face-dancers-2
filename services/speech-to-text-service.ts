@@ -51,8 +51,6 @@ class STTServiceClass extends EventEmitter {
 
         this.mediaRecorder = new MediaRecorder(this.stream)
 
-        console.log(`MediaRecorder: ${this.mediaRecorder}`)
-
         this.mediaRecorder.start(500)
 
         this.mediaRecorder.ondataavailable = (event) => {

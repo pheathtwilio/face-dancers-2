@@ -22,7 +22,9 @@ export enum VideoEvents {
     VIDEO_REQUEST_ROOM = 'video-request-room',
     VIDEO_ROOM_REQUESTED = 'video-room-requested',
     VIDEO_HTML_REQUESTED = 'video-html-requested',
-    VIDEO_REQUEST_HTML = 'video-requested-html'
+    VIDEO_REQUEST_HTML = 'video-requested-html',
+    VIDEO_LIST_ROOMS = 'video-list-rooms',
+    VIDEO_ROOMS_LISTED = 'video-rooms-listed'
 }
 
 export interface TwilioVideoRoom {

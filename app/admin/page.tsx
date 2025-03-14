@@ -6,69 +6,69 @@ import AvatarEvents from '@/util/avatar-types'
 import AvatarServiceClass from '@/services/avatar-service'
 import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
+import VideoService from '@/services/video-service'
+import { VideoEvents } from '@/util/video-types'
 
 
 const WaitingRoom: React.FC = () => {
 
-    const router = useRouter()
+    // const router = useRouter()
 
-    const avatarServiceRef = useRef<typeof AvatarServiceClass | null>(null)
-    const [sessions, setSessions] = useState<object[]>([])
+    const avatarServiceRef = useRef<typeof AvatarService | null>(null)
+    const videoServiceRef = useRef<typeof VideoService | null>(null)
+    const [avatarSessions, setAvatarSessions] = useState<object[]>([])
+    const [videoRooms, setVideoRooms] = useState<object[]>([])
     
 
     // Global Mounting    
     useEffect(() => {
 
         // initiate the avatar 
-        initializeAvatar()       
+        // initializeAvatar()     
+
+        EventService.on(AvatarEvents.AVATAR_SESSIONS_GOT, (sessions) => {
+          console.log(`ADMIN received ${sessions}`)
+        })
+        EventService.on(VideoEvents.VIDEO_ROOMS_LISTED, (rooms) => {
+          console.log(rooms)
+          setVideoRooms(rooms)
+        })  
         
+        try {
+          videoServiceRef.current = VideoService
+        }catch(e){
+          console.error(e)
+        }
+
+
+
     }, [])
 
-    const initializeAvatar = async () => {
-      try {
-        avatarServiceRef.current = AvatarService
-
-        if(avatarServiceRef.current){
-            await listSessions()
-        } else {
-
-            // TODO 
-            // const interval = setInterval(() => {
-            //     if (avatarServiceRef.current) {
-            //         avatarServiceRef.current.on(AvatarEvents.AVATAR_STARTED_SESSION, async () => {
-            //             await listSessions()
-            //         })
-            //         clearInterval(interval)  
-            //     }
-            // }, 1000)  
-        }
-
-      }catch(e){
-        console.error(e)
-      }
-    }
-
-    // TODO - emit events for getting sessions
     const listSessions = async () => {
+      console.log('listSessions clicked')
       if(avatarServiceRef.current){
-        EventService.emit(AvatarEvents.AVATAR_GET_SESSIONS, (sessions: object[]) => {
-          console.log(sessions)
-          setSessions(sessions ?? [])
-        })
-
-        
+        console.log(`Admin - sending event ${AvatarEvents.AVATAR_GET_SESSIONS}`)
+        EventService.emit(AvatarEvents.AVATAR_GET_SESSIONS)
       }
     }
 
-    // TODO emit events for closing sessions
     const endSession = async (session_id: string) => {
 
-        let data: object = {}
-        if(avatarServiceRef.current){
-            EventService.emit(AvatarEvents.AVATAR_CLOSE_SESSION, (session_id))
-        }
+      let data: object = {}
+      // if(avatarServiceRef.current){
+          EventService.emit(AvatarEvents.AVATAR_CLOSE_SESSION, (session_id))
+      // }
 
-        console.log(data)
+      console.log(data)
+    }
+
+    const listRooms = async () => {
+      console.log('listrooms has been clicked')
+      EventService.emit(VideoEvents.VIDEO_LIST_ROOMS)
+    }
+
+    const endRoom = async (roomSid: string) => {
+
     }
 
     return (
@@ -87,11 +87,11 @@ const WaitingRoom: React.FC = () => {
               onClick={listSessions}
               className='w-100 mt-3'
             >
-              List Sessions
+              List Avatar Sessions
             </Button>
             <ListGroup className="mt-3">
-                {sessions.length > 0 ? (
-                    sessions.map((session: any) => (
+                {avatarSessions.length > 0 ? (
+                    avatarSessions.map((session: any) => (
                         <ListGroup.Item key={session.session_id}>
                             <Row className="align-items-center">
                                 <Col>
@@ -112,6 +112,41 @@ const WaitingRoom: React.FC = () => {
                     ))
                 ) : (
                     <ListGroup.Item>No active sessions</ListGroup.Item>
+                )}
+            </ListGroup>
+            <Alert variant='warning' className='text-center'>
+                Twilio Video Room Management
+            </Alert>
+            <Button
+              variant='secondary'
+              onClick={listRooms}
+              className='w-100 mt-3'
+            >
+              List Video Rooms
+            </Button>
+            <ListGroup className="mt-3">
+                {videoRooms.length > 0 ? (
+                    videoRooms.map((room: any) => (
+                        <ListGroup.Item key={room.sid}>
+                            <Row className="align-items-center">
+                                <Col>
+                                    <strong>Room SID:</strong> {room.sid} <br />
+                                    <strong>Status:</strong> {room.status} <br />
+                                    <strong>Created At:</strong> {new Date(room.date_created).toLocaleString()}
+                                </Col>
+                                <Col className="text-right">
+                                    <Button 
+                                        variant="danger" 
+                                        onClick={() => endRoom(room.sid)}
+                                    >
+                                        End Room
+                                    </Button>
+                                </Col>
+                            </Row>
+                        </ListGroup.Item>
+                    ))
+                ) : (
+                    <ListGroup.Item>No active Rooms</ListGroup.Item>
                 )}
             </ListGroup>
           </Form>

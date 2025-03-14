@@ -53,6 +53,10 @@ class VideoServiceClass extends EventEmitter {
             this.joinParticipant(username, audioDeviceId, videoDeviceId)
         })
 
+        EventService.on(VideoEvents.VIDEO_LIST_ROOMS, () => {
+            this.listRooms()
+        })
+
     }
 
     // Singleton pattern to ensure a single instance of the VideoService
@@ -180,6 +184,18 @@ class VideoServiceClass extends EventEmitter {
         audioElement!.muted = true
     }
 
+    private listRooms = async () => {
+        const response = await (fetch('api/twilio-video-list-rooms', {
+            method: 'GET'
+        }))
+        const roomService = await response.json()
+
+        if(!roomService)
+            throw new Error('no room service received')
+
+        EventService.emit(VideoEvents.VIDEO_ROOMS_LISTED, roomService.rooms.rooms)
+    }
+
     public endRoom = async () => {
 
         if(this.room?.sid){
@@ -190,7 +206,7 @@ class VideoServiceClass extends EventEmitter {
                     method: 'POST',
                     body: JSON.stringify({sid: this.room?.sid})
                 }))
-    
+
                 const room = await response.json()
                 console.log(`${VideoEvents.VIDEO_SESSION_ENDED} for ${this.room.sid}`)
 
