@@ -1,6 +1,6 @@
 'use client'
 import { useEffect } from 'react'
-import { Button, Container, Col, Row } from 'react-bootstrap'
+import { Button, Card, Container, Col, Row } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 
 const Interstitial: React.FC = () => {
@@ -25,21 +25,24 @@ const Interstitial: React.FC = () => {
 
    
     return (
-      <Container fluid className="vh-100 d-flex justify-content-center align-items-center">
-            <Row>
-              <Col className="text-center">
-                <h1>Interstitial</h1>
-                <p>
-                  Because Google doesnt allow capturing of audio from the browser 
-                  unless a user gesture has been performed, you absolutely must 
-                  press this button before we do anything.
+      <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
+        <Row>
+          <Col className="text-center">
+            <Card className="p-4 shadow-sm border-0">
+              <Card.Body>
+                <h1 className="fw-bold">Interstitial</h1>
+                <p className="lead text-muted">
+                  Google requires a user gesture before capturing audio in the browser. 
+                  Please press the button below before we proceed.
                 </p>
-                <Button variant="primary" onClick={handleEnter} className="mt-3">
-                  Let's go!
+                <Button variant="dark" onClick={handleEnter} className="mt-3 btn-lg">
+                  Let's Go!
                 </Button>
-              </Col>
-            </Row>
-          </Container>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     )
 }
 
