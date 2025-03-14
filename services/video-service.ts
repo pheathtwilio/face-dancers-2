@@ -31,7 +31,7 @@ class VideoServiceClass extends EventEmitter {
         })
 
         EventService.on(VideoEvents.VIDEO_END_SESSION, () => {
-            this.endRoom()
+            this.endSession()
         })
 
         EventService.on(VideoEvents.VIDEO_REQUEST_HTML, () => {
@@ -55,6 +55,10 @@ class VideoServiceClass extends EventEmitter {
 
         EventService.on(VideoEvents.VIDEO_LIST_ROOMS, () => {
             this.listRooms()
+        })
+
+        EventService.on(VideoEvents.VIDEO_END_ROOM, (roomSid) => {
+            this.endRoom(roomSid)
         })
 
     }
@@ -196,7 +200,7 @@ class VideoServiceClass extends EventEmitter {
         EventService.emit(VideoEvents.VIDEO_ROOMS_LISTED, roomService.rooms.rooms)
     }
 
-    public endRoom = async () => {
+    private endSession = async () => {
 
         if(this.room?.sid){
 
@@ -214,6 +218,23 @@ class VideoServiceClass extends EventEmitter {
             }catch(e){console.error(e)}
            
         }
+
+    }
+
+    private endRoom = async (roomSid: string) => {
+
+        try{
+
+            const response = await (fetch('api/twilio-video-end-room', {
+                method: 'POST',
+                body: JSON.stringify({sid: this.room?.sid})
+            }))
+
+            const room = await response.json()
+            console.log(`${VideoEvents.VIDEO_SESSION_ENDED} for ${roomSid}`)
+
+
+        }catch(e){console.error(e)}
 
     }
 

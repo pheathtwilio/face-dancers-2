@@ -34,25 +34,25 @@ const WaitingRoom: React.FC = () => {
         try {
           avatarServiceRef.current = AvatarService
           videoServiceRef.current = VideoService
+
+          // get the sessions if they exist
+          listSessions()
+
+          // get the video rooms if they exist
+          listRooms()
+
         }catch(e){
           console.error(e)
         }
 
     }, [])
-
+ 
     const listSessions = async () => {
-      console.log(`Admin - sending event ${AvatarEvents.AVATAR_GET_SESSIONS}`)
       EventService.emit(AvatarEvents.AVATAR_GET_SESSIONS)
     }
 
     const endSession = async (session_id: string) => {
-
-      let data: object = {}
-      // if(avatarServiceRef.current){
-          EventService.emit(AvatarEvents.AVATAR_CLOSE_SESSION, (session_id))
-      // }
-
-      console.log(data)
+      EventService.emit(AvatarEvents.AVATAR_CLOSE_SESSION, (session_id))
     }
 
     const listRooms = async () => {
@@ -60,7 +60,7 @@ const WaitingRoom: React.FC = () => {
     }
 
     const endRoom = async (roomSid: string) => {
-
+      EventService.emit(VideoEvents.VIDEO_END_ROOM, (roomSid))
     }
 
     return (

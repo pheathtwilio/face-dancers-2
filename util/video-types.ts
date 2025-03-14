@@ -18,6 +18,7 @@ export enum VideoEvents {
     VIDEO_JOIN_PARTICIPANT = 'video-join-participant',
     VIDEO_PARTICIPANT_JOINED = 'video-participant-joined',
     VIDEO_END_SESSION = 'video-end-session',
+    VIDEO_END_ROOM = 'video-end-room',
     VIDEO_SESSION_ENDED = 'video-session-ended',
     VIDEO_REQUEST_ROOM = 'video-request-room',
     VIDEO_ROOM_REQUESTED = 'video-room-requested',
