@@ -227,7 +227,7 @@ class VideoServiceClass extends EventEmitter {
 
             const response = await (fetch('api/twilio-video-end-room', {
                 method: 'POST',
-                body: JSON.stringify({sid: this.room?.sid})
+                body: JSON.stringify({sid: roomSid})
             }))
 
             const room = await response.json()

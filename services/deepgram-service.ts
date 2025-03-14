@@ -17,7 +17,7 @@ class DeepgramServiceClass extends EventEmitter {
 
     private static instance: DeepgramServiceClass
     private deepgram: DeepgramClient | null = null
-    private client: ListenLiveClient | undefined = undefined
+    private connection: ListenLiveClient | undefined = undefined
     private options: DeepgramSTTOptions | null = {
         apiKey: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || 'undefined',
         config: {
@@ -47,23 +47,28 @@ class DeepgramServiceClass extends EventEmitter {
 
     private initialize = async () => {
 
+        console.log('deepgram-service - establishing client')
         this.deepgram = createClient(this.options?.apiKey)
-        this.client = await this.deepgram?.listen.live(this.options?.config)
+        if(!this.deepgram) throw new Error('No Deepgram client was established')
 
-        this.client?.on(LiveTranscriptionEvents.Open, () => {
+        console.log('deepgram-service - establishing connection')
+        this.connection = await this.deepgram?.listen.live(this.options?.config)
+        if(!this.connection) throw new Error('No Deepgram connection was established')
+
+        this.connection?.on(LiveTranscriptionEvents.Open, () => {
 
             // register listeners from STT
             EventService.on(STTEvents.STT_SEND_SPEECH_DATA, (data) => {
-                this.client?.send(data)
+                this.connection?.send(data)
             })
 
         })
 
         let is_finals: string[] = []
-        this.client?.on(LiveTranscriptionEvents.Transcript, (data) => {
+        this.connection?.on(LiveTranscriptionEvents.Transcript, (data) => {
             const sentence = data.channel.alternatives[0].transcript
 
-            console.log(`DEEPGRAM_TRANSCRIPTION: ${sentence}`)
+            console.log(`deepgram-service - transcription: ${sentence}`)
 
             if(sentence.length == 0) return // ignore empty transcripts
 
@@ -84,13 +89,13 @@ class DeepgramServiceClass extends EventEmitter {
             }
         })
 
-        this.client?.on(LiveTranscriptionEvents.Close, () => {this.client?.disconnect()})
-        this.client?.on(LiveTranscriptionEvents.Error, (e) => {
+        this.connection?.on(LiveTranscriptionEvents.Close, () => {this.connection?.disconnect()})
+        this.connection?.on(LiveTranscriptionEvents.Error, (e) => {
 
             console.error(e)
             try{
-                this.client?.removeAllListeners()
-                this.client?.disconnect()
+                this.connection?.removeAllListeners()
+                this.connection?.disconnect()
             }catch(e){console.error(e)}
             
         })
