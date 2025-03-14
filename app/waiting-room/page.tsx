@@ -24,12 +24,14 @@ const WaitingRoom: React.FC = () => {
   const llmServiceRef = useRef<typeof LLMService | null>(null)
   const sttServiceRef = useRef<typeof STTService | null>(null)
 
+  const selectedAudioDeviceRef = useRef<string | ''>('')
+
   const [participants, setParticipants] = useState<number>(0)
   const [participantName, setParticipantName] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
+  // const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
   const [stream, setStream] = useState<MediaStream | null>(null)
 
@@ -99,10 +101,15 @@ const WaitingRoom: React.FC = () => {
     }
   }
 
+  const changeAudioDevice = (deviceId: string) => {
+    selectedAudioDeviceRef.current = deviceId
+    EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDeviceRef.current)
+  }
+
   const joinRoom = async () => {
 
-      EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDevice, selectedVideoDevice)
-      EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDevice)
+      EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDevice)
+      // EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDevice)
 
       router.push('/video-room')
   }
@@ -156,8 +163,8 @@ const WaitingRoom: React.FC = () => {
                     <Form.Group className='mb-3'>
                       <Form.Label className="fw-semibold">Audio Device</Form.Label>
                       <Form.Select
-                        value={selectedAudioDevice}
-                        onChange={(e) => setSelectedAudioDevice(e.target.value)}
+                        value={selectedAudioDeviceRef.current}
+                        onChange={(e) => changeAudioDevice(e.target.value)}
                       >
                         <option value=''>Select Audio Device</option>
                         {audioDevices.map((device) => (
@@ -187,7 +194,7 @@ const WaitingRoom: React.FC = () => {
                       variant='dark'
                       onClick={joinRoom}
                       className='w-100 btn-lg'
-                      disabled={!userName || !selectedAudioDevice || !selectedVideoDevice || participants < 1}
+                      disabled={!userName || !selectedAudioDeviceRef.current || !selectedVideoDevice || participants < 1}
                     >
                       Join Room
                     </Button>

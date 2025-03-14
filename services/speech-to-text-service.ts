@@ -14,6 +14,8 @@ class STTServiceClass extends EventEmitter {
         super()
 
         EventService.on(STTEvents.STT_ATTACH_AUDIO_TRACK, (audioDeviceId) => {
+
+            console.log(`speech-to-text-service - attaching audio track for ${audioDeviceId}`)
             
             if(!audioDeviceId) throw new Error('no audio device id has been passed')
             this.audioDeviceId = audioDeviceId
@@ -54,6 +56,7 @@ class STTServiceClass extends EventEmitter {
         this.mediaRecorder.start(500)
 
         this.mediaRecorder.ondataavailable = (event) => {
+            console.log(STTEvents.STT_SEND_SPEECH_DATA)
             EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
         }
 

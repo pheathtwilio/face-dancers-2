@@ -68,8 +68,6 @@ class DeepgramServiceClass extends EventEmitter {
         this.connection?.on(LiveTranscriptionEvents.Transcript, (data) => {
             const sentence = data.channel.alternatives[0].transcript
 
-            console.log(`deepgram-service - transcription: ${sentence}`)
-
             if(sentence.length == 0) return // ignore empty transcripts
 
             if(data.is_final){
@@ -80,6 +78,7 @@ class DeepgramServiceClass extends EventEmitter {
                     const utterance = is_finals.join(' ')
                     is_finals = []
                     EventService.emit(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, utterance)
+                    console.log(`deepgram-service - ${sentence}`)
                 }else{
                 // good for real-time captioning
                 }
