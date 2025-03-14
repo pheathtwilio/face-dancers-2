@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import { Button, Container, Col, Row } from 'react-bootstrap'
+import { Button, Card, Container, Col, Row } from 'react-bootstrap'
 import AvatarService from '@/services/avatar-service'
 import VideoService from '@/services/video-service'
 import { useRouter } from 'next/navigation'
@@ -53,31 +53,36 @@ const VideoRoom: React.FC = () => {
   }
    
     return (
-      <div className="video-room-container">
-        <Container className="mt-5">
-          <h1 className="text-center">Avatar Video Room</h1>
-          <Row className="justify-content-center">
-            <Col md={6}>
-              <div ref={remoteVideoRef} style={
-                { 
-                  width: '100%', 
-                  minHeight: '400px', 
-                  backgroundColor: '#000' 
-                }}>
-                <p className="text-white text-center">Waiting for avatar...</p>
-              </div>
-              <Button 
-                variant="secondary" 
-                onClick={endSession} 
-                className="mt-3"
-                style={{ width: 'auto'}}
-              >
-                End Session
-              </Button>
-            </Col>
-          </Row>
-        </Container>
-      </div>
+      <Container className="mt-5 d-flex justify-content-center">
+        <Card className="p-4 shadow-sm border-0" style={{ maxWidth: "800px", width: "100%" }}>
+          <Card.Body>
+            <h1 className="text-center fw-bold mb-4">Avatar Video Room</h1>
+            <Row className="justify-content-center">
+              <Col>
+                <div 
+                  ref={remoteVideoRef} 
+                  className="d-flex align-items-center justify-content-center rounded bg-dark"
+                  style={{ 
+                    width: '100%', 
+                    minHeight: '400px', 
+                    overflow: 'hidden', 
+                    borderRadius: '12px' 
+                  }}
+                >
+                  <p className="text-white text-center m-0 fw-semibold">Waiting for avatar...</p>
+                </div>
+                <Button 
+                  variant="dark" 
+                  onClick={endSession} 
+                  className="w-100 btn-lg mt-4"
+                >
+                  End Session
+                </Button>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Container>
     )
 }
 
