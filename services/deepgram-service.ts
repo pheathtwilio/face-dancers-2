@@ -29,7 +29,11 @@ class DeepgramServiceClass extends EventEmitter {
 
     private constructor() {
         super()
-        this.initialize()
+        // this.initialize()
+
+        EventService.on(DeepgramEvents.DEEPGRAM_START_SESSION, () => {
+            this.initialize()
+        })
 
         EventService.on(DeepgramEvents.DEEPGRAM_END_SESSION, () => {
             this.endSession()
@@ -45,6 +49,10 @@ class DeepgramServiceClass extends EventEmitter {
         return DeepgramServiceClass.instance
     }
 
+    private sendVoiceData = (data: any) => {
+        this.connection?.send(data)
+    }
+
     private initialize = async () => {
 
         console.log('deepgram-service - establishing client')
@@ -55,17 +63,19 @@ class DeepgramServiceClass extends EventEmitter {
         this.connection = await this.deepgram?.listen.live(this.options?.config)
         if(!this.connection) throw new Error('No Deepgram connection was established')
 
+
+        console.log(`deepgram-service - connection state ${this.connection?.getReadyState()}`)
+
         this.connection?.on(LiveTranscriptionEvents.Open, () => {
 
-            // register listeners from STT
-            EventService.on(STTEvents.STT_SEND_SPEECH_DATA, (data) => {
-                this.connection?.send(data)
-            })
+            EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
+            EventService.on(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
 
         })
 
         let is_finals: string[] = []
         this.connection?.on(LiveTranscriptionEvents.Transcript, (data) => {
+
             const sentence = data.channel.alternatives[0].transcript
 
             if(sentence.length == 0) return // ignore empty transcripts
@@ -77,7 +87,7 @@ class DeepgramServiceClass extends EventEmitter {
                 if(data.speech_final){
                     const utterance = is_finals.join(' ')
                     is_finals = []
-                    EventService.emit(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, utterance)
+                    this.sendUtterance(utterance)
                     console.log(`deepgram-service - ${sentence}`)
                 }else{
                 // good for real-time captioning
@@ -101,8 +111,15 @@ class DeepgramServiceClass extends EventEmitter {
 
     }
 
-    private endSession = () => {
+    private sendUtterance = (utterance: string) => {
+        EventService.emit(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, utterance)
+    }
 
+    private endSession = async () => {
+        await this.connection?.requestClose()
+        this.deepgram = null
+        EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
+        EventService.off(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, this.sendUtterance)
     }
 
 }

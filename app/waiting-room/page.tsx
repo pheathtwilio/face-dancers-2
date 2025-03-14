@@ -12,6 +12,7 @@ import VideoService from '@/services/video-service'
 import DeepgramService from '@/services/deepgram-service'
 import LLMService from '@/services/llm-service'
 import STTService from '@/services/speech-to-text-service'
+import DeepgramEvents from '@/util/deepgram-types'
 
 
 const WaitingRoom: React.FC = () => {
@@ -31,7 +32,6 @@ const WaitingRoom: React.FC = () => {
   const [userName, setUserName] = useState<string>('')
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
-  // const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
   const [stream, setStream] = useState<MediaStream | null>(null)
 
@@ -40,14 +40,22 @@ const WaitingRoom: React.FC = () => {
   // Global Mounting    
   useEffect(() => {
 
+      const startDeepgram = () => {
+        EventService.emit(DeepgramEvents.DEEPGRAM_START_SESSION)
+      }
+
 
       // this initializes all of these singleton classes
       try {
         avatarServiceRef.current = AvatarService
         videoServiceRef.current = VideoService
         deepgramServiceRef.current = DeepgramService
+
+        startDeepgram()
+
         llmServiceRef.current = LLMService
         sttServiceRef.current = STTService
+
       }catch(e){
         console.error(e)
       }
@@ -72,7 +80,9 @@ const WaitingRoom: React.FC = () => {
     
 
       // cleanup function
-      return () => {} // no cleanup, the intent is to move to the next page  
+      return () => {
+        EventService.off(DeepgramEvents.DEEPGRAM_START_SESSION, startDeepgram)
+      }  
         
   }, [])
 
@@ -85,6 +95,8 @@ const WaitingRoom: React.FC = () => {
     }
 
   }, [searchParams])
+
+
 
 
   const fetchDevices = async () => {
@@ -109,7 +121,6 @@ const WaitingRoom: React.FC = () => {
   const joinRoom = async () => {
 
       EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDevice)
-      // EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDevice)
 
       router.push('/video-room')
   }
@@ -119,6 +130,8 @@ const WaitingRoom: React.FC = () => {
       console.log('calling end session')
       EventService.emit(AvatarEvents.AVATAR_END_SESSION)
       EventService.emit(VideoEvents.VIDEO_END_SESSION)
+      EventService.emit(STTEvents.STT_END_SESSION)
+      EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
       router.push('/goodbye')
   }
 

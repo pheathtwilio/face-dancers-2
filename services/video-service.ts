@@ -77,20 +77,6 @@ class VideoServiceClass extends EventEmitter {
         stream: MediaStream
     ) => {
 
-        // check if rooms exist
-        // let response = await (fetch('api/twilio-video-list-rooms', {
-        //     method: 'GET'
-        // }))
-        // const roomService = await response.json()
-        // if(roomService.rooms.rooms.length > 0){
-        //     roomService.rooms.rooms.forEach(async (room: any)  => {
-        //         await this.endRoom(room.sid)
-        //     })
-        // }
-
-        console.log('creating room')
-
-        // then create the room
         const response = await (fetch('api/twilio-video-create-room', {
             method: 'POST',
             body: JSON.stringify(roomPrefs)
@@ -226,7 +212,7 @@ class VideoServiceClass extends EventEmitter {
 
                 const room = await response.json()
                 console.log(`${VideoEvents.VIDEO_SESSION_ENDED} for ${this.room.sid}`)
-
+                this.room = null
 
             }catch(e){console.error(e)}
            

@@ -60,7 +60,6 @@ class STTServiceClass extends EventEmitter {
         this.mediaRecorder.start(500)
 
         this.mediaRecorder.ondataavailable = (event) => {
-            console.log(STTEvents.STT_SEND_SPEECH_DATA)
             EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
         }
 
@@ -72,10 +71,16 @@ class STTServiceClass extends EventEmitter {
 
     }
 
+    private sendSpeechData = (data: any) => {
+        EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, data)
+    }
+
     private endSession = () => {
         if(this.mediaRecorder){
             this.mediaRecorder.stop()
+            this.mediaRecorder = null
         }
+        EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendSpeechData)
     }
 
 }
