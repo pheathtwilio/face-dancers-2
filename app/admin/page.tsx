@@ -23,33 +23,26 @@ const WaitingRoom: React.FC = () => {
     // Global Mounting    
     useEffect(() => {
 
-        // initiate the avatar 
-        // initializeAvatar()     
-
         EventService.on(AvatarEvents.AVATAR_SESSIONS_GOT, (sessions) => {
-          console.log(`ADMIN received ${sessions}`)
+          console.log(sessions)
+          setAvatarSessions(sessions)
         })
         EventService.on(VideoEvents.VIDEO_ROOMS_LISTED, (rooms) => {
-          console.log(rooms)
           setVideoRooms(rooms)
         })  
         
         try {
+          avatarServiceRef.current = AvatarService
           videoServiceRef.current = VideoService
         }catch(e){
           console.error(e)
         }
 
-
-
     }, [])
 
     const listSessions = async () => {
-      console.log('listSessions clicked')
-      if(avatarServiceRef.current){
-        console.log(`Admin - sending event ${AvatarEvents.AVATAR_GET_SESSIONS}`)
-        EventService.emit(AvatarEvents.AVATAR_GET_SESSIONS)
-      }
+      console.log(`Admin - sending event ${AvatarEvents.AVATAR_GET_SESSIONS}`)
+      EventService.emit(AvatarEvents.AVATAR_GET_SESSIONS)
     }
 
     const endSession = async (session_id: string) => {
@@ -63,7 +56,6 @@ const WaitingRoom: React.FC = () => {
     }
 
     const listRooms = async () => {
-      console.log('listrooms has been clicked')
       EventService.emit(VideoEvents.VIDEO_LIST_ROOMS)
     }
 

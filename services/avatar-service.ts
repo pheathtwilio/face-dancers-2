@@ -40,8 +40,7 @@ class AvatarServiceClass extends EventEmitter {
         })
 
         EventService.on(AvatarEvents.AVATAR_GET_SESSIONS, () => {
-            const sessions = this.getSessions()
-            EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (sessions))
+            this.getSessions()
         })
 
         EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () => {
@@ -152,7 +151,7 @@ class AvatarServiceClass extends EventEmitter {
                 }
             }
 
-            return data
+            EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (data))
 
         }catch(e){console.error(e)}
     }
