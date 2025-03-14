@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button,Container, Col, Form, ListGroup, Row } from 'react-bootstrap'
+import { Alert, Button, Card, Container, Col, Form, ListGroup, Row } from 'react-bootstrap'
 import AvatarService from '@/services/avatar-service'
 import AvatarEvents from '@/util/avatar-types'
 import AvatarServiceClass from '@/services/avatar-service'
@@ -24,7 +24,6 @@ const WaitingRoom: React.FC = () => {
     useEffect(() => {
 
         EventService.on(AvatarEvents.AVATAR_SESSIONS_GOT, (sessions) => {
-          console.log(sessions)
           setAvatarSessions(sessions)
         })
         EventService.on(VideoEvents.VIDEO_ROOMS_LISTED, (rooms) => {
@@ -66,85 +65,71 @@ const WaitingRoom: React.FC = () => {
     return (
         <div className='admin-container'>
             <Container className='mt-5'>
-      <h1 className='text-center'>Admin</h1>
-      <Row className='justify-content-center'>
-        <Col md={6}>
-          <Form>
+            <h1 className='text-center mb-4 fw-bold'>Admin Dashboard</h1>
+            <Row className='justify-content-center'>
+              <Col md={8}>
+                <Card className="p-4 shadow-sm border-0">
+                  <Alert variant='warning' className='text-center fw-semibold'>
+                    Heygen Session Management
+                  </Alert>
+                  <Button variant='dark' onClick={listSessions} className='w-100 btn-lg'>
+                    List Avatar Sessions
+                  </Button>
+                  <ListGroup className="mt-3 border rounded">
+                    {avatarSessions.length > 0 ? (
+                      avatarSessions.map((session: any) => (
+                        <ListGroup.Item key={session.session_id} className="py-3">
+                          <Row className="align-items-center">
+                            <Col>
+                              <strong>Session ID:</strong> {session.session_id} <br />
+                              <strong>Status:</strong> {session.status} <br />
+                              <strong>Created At:</strong> {new Date(session.created_at * 1000).toLocaleString()}
+                            </Col>
+                            <Col xs="auto">
+                              <Button variant="danger" size="sm" onClick={() => endSession(session.session_id)}>
+                                End Session
+                              </Button>
+                            </Col>
+                          </Row>
+                        </ListGroup.Item>
+                      ))
+                    ) : (
+                      <ListGroup.Item className="text-muted text-center">No active sessions</ListGroup.Item>
+                    )}
+                  </ListGroup>
 
-            <Alert variant='warning' className='text-center'>
-                Heygen Session Management
-            </Alert>
-            <Button
-              variant='secondary'
-              onClick={listSessions}
-              className='w-100 mt-3'
-            >
-              List Avatar Sessions
-            </Button>
-            <ListGroup className="mt-3">
-                {avatarSessions.length > 0 ? (
-                    avatarSessions.map((session: any) => (
-                        <ListGroup.Item key={session.session_id}>
-                            <Row className="align-items-center">
-                                <Col>
-                                    <strong>Session ID:</strong> {session.session_id} <br />
-                                    <strong>Status:</strong> {session.status} <br />
-                                    <strong>Created At:</strong> {new Date(session.created_at * 1000).toLocaleString()}
-                                </Col>
-                                <Col className="text-right">
-                                    <Button 
-                                        variant="danger" 
-                                        onClick={() => endSession(session.session_id)}
-                                    >
-                                        End Session
-                                    </Button>
-                                </Col>
-                            </Row>
+                  <Alert variant='warning' className='text-center mt-4 fw-semibold'>
+                    Twilio Video Room Management
+                  </Alert>
+                  <Button variant='dark' onClick={listRooms} className='w-100 btn-lg'>
+                    List Video Rooms
+                  </Button>
+                  <ListGroup className="mt-3 border rounded">
+                    {videoRooms.length > 0 ? (
+                      videoRooms.map((room: any) => (
+                        <ListGroup.Item key={room.sid} className="py-3">
+                          <Row className="align-items-center">
+                            <Col>
+                              <strong>Room SID:</strong> {room.sid} <br />
+                              <strong>Status:</strong> {room.status} <br />
+                              <strong>Created At:</strong> {new Date(room.date_created).toLocaleString()}
+                            </Col>
+                            <Col xs="auto">
+                              <Button variant="danger" size="sm" onClick={() => endRoom(room.sid)}>
+                                End Room
+                              </Button>
+                            </Col>
+                          </Row>
                         </ListGroup.Item>
-                    ))
-                ) : (
-                    <ListGroup.Item>No active sessions</ListGroup.Item>
-                )}
-            </ListGroup>
-            <Alert variant='warning' className='text-center'>
-                Twilio Video Room Management
-            </Alert>
-            <Button
-              variant='secondary'
-              onClick={listRooms}
-              className='w-100 mt-3'
-            >
-              List Video Rooms
-            </Button>
-            <ListGroup className="mt-3">
-                {videoRooms.length > 0 ? (
-                    videoRooms.map((room: any) => (
-                        <ListGroup.Item key={room.sid}>
-                            <Row className="align-items-center">
-                                <Col>
-                                    <strong>Room SID:</strong> {room.sid} <br />
-                                    <strong>Status:</strong> {room.status} <br />
-                                    <strong>Created At:</strong> {new Date(room.date_created).toLocaleString()}
-                                </Col>
-                                <Col className="text-right">
-                                    <Button 
-                                        variant="danger" 
-                                        onClick={() => endRoom(room.sid)}
-                                    >
-                                        End Room
-                                    </Button>
-                                </Col>
-                            </Row>
-                        </ListGroup.Item>
-                    ))
-                ) : (
-                    <ListGroup.Item>No active Rooms</ListGroup.Item>
-                )}
-            </ListGroup>
-          </Form>
-        </Col>
-      </Row>
-    </Container>
+                      ))
+                    ) : (
+                      <ListGroup.Item className="text-muted text-center">No active Rooms</ListGroup.Item>
+                    )}
+                  </ListGroup>
+                </Card>
+              </Col>
+            </Row>
+          </Container>
 
         </div>
     )
