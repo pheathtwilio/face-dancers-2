@@ -1,41 +1,95 @@
 'use client'
-import { useEffect } from 'react'
-import { Button, Card, Container, Col, Row } from 'react-bootstrap'
+import { useState } from 'react'
+import { Button, Card, Container, Col, Row, Dropdown, Form } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
+import { Config, usecases } from '@/app/config/config' // Adjust the import path
 
 const Interstitial: React.FC = () => {
-
     const router = useRouter()
+    const [selectedUseCase, setSelectedUseCase] = useState(usecases.collection[0])
 
-    // Global Mounting    
-    useEffect(() => {
-
-  
-
-      return () => {
-
-      }
-        
-    }, [])
-
-
-    const handleEnter = () => {
-      router.push('/waiting-room')
+    const handleSelectUseCase = (index: number) => {
+        setSelectedUseCase(usecases.collection[index])
     }
 
-   
+    const handleInputChange = (field: keyof typeof selectedUseCase, value: string) => {
+        setSelectedUseCase((prev) => ({ ...prev, [field]: value }))
+    }
+
+    const handleEnter = () => {
+        Config.useCase = selectedUseCase
+        router.push('/waiting-room')
+    }
+
     return (
       <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
-        <Row>
-          <Col className="text-center">
-            <Card className="p-4 shadow-sm border-0">
-              <Card.Body>
-                <h1 className="fw-bold">Interstitial</h1>
-                <p className="lead text-muted">
-                  Google requires a user gesture before capturing audio in the browser. 
-                  Please press the button below before we proceed.
+        <Row className="w-100">
+          <Col md={{ span: 6, offset: 3 }}> {/* Centered column */}
+            <Card className="p-4 shadow-sm border-0 w-100">
+              <Card.Body className="d-flex flex-column gap-3">
+                <h1 className="fw-bold text-center">Use Case</h1>
+                <p className="lead text-muted text-center">
+                  Please select your use case.
                 </p>
-                <Button variant="dark" onClick={handleEnter} className="mt-3 btn-lg">
+
+                {/* Dropdown Selector */}
+                <Dropdown className="mb-3">
+                  <Dropdown.Toggle variant="dark" className="w-100">
+                    {selectedUseCase.name}
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu className="w-100">
+                    {usecases.collection.map((useCase, index) => (
+                      <Dropdown.Item key={index} onClick={() => handleSelectUseCase(index)}>
+                        {useCase.name}
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown>
+
+                <Form className="d-flex flex-column gap-3">
+                  <Form.Group>
+                    <Form.Label className="text-start w-100 fw-semibold">Use Case Name</Form.Label>
+                    <Form.Control 
+                      type="text" 
+                      value={selectedUseCase.name} 
+                      readOnly 
+                      className="w-100 bg-light"
+                    />
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label className="text-start w-100 fw-semibold">Avatar</Form.Label>
+                    <Form.Control 
+                      type="text" 
+                      value={selectedUseCase.avatar_name} 
+                      readOnly 
+                      className="w-100 bg-light"
+                    />
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label className="text-start w-100 fw-semibold">Greeting</Form.Label>
+                    <Form.Control 
+                      type="text" 
+                      value={selectedUseCase.greeting} 
+                      onChange={(e) => handleInputChange('greeting', e.target.value)}
+                      className="w-100"
+                    />
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label className="text-start w-100 fw-semibold">Prompt</Form.Label>
+                    <Form.Control 
+                      as="textarea" 
+                      rows={6} 
+                      value={selectedUseCase.prompt} 
+                      onChange={(e) => handleInputChange('prompt', e.target.value)}
+                      className="w-100"
+                    />
+                  </Form.Group>
+                </Form>
+
+                <Button variant="dark" onClick={handleEnter} className="mt-3 w-100 btn-lg">
                   Let's Go!
                 </Button>
               </Card.Body>
