@@ -1,15 +1,30 @@
 'use client'
 
-import React from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button, Card, Container, Row, Col } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 
 export default function GoodbyePage() {
   
   const router = useRouter()
+  const [userName, setUserName] = useState<string>('')
+  const searchParams = useRef<URLSearchParams | null>(null)
+
+  useEffect(() => {
+
+    if(typeof window !== 'undefined'){
+      searchParams.current = new URLSearchParams(window.location.search)
+    }
+  
+    if(searchParams.current){
+      const name = searchParams.current.get('username') || ''
+      setUserName(name)
+    }
+
+  }, [searchParams])
 
   const handleReturn = () => {
-    router.push('/') // Adjust the path as needed
+    router.push(`/?username=${userName}`) // Adjust the path as needed
   }
 
   return (

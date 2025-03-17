@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Card, Container, Col, Row } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
@@ -12,6 +12,9 @@ import DeepgramEvents from '@/util/deepgram-types'
 const VideoRoom: React.FC = () => {
 
   const remoteVideoRef = useRef<HTMLDivElement | null>(null)
+
+  const [userName, setUserName] = useState<string>('')
+  const searchParams = useRef<URLSearchParams | null>(null)
 
   const router = useRouter()
 
@@ -42,9 +45,22 @@ const VideoRoom: React.FC = () => {
         
     }, [])
 
+  useEffect(() => {
+
+    if(typeof window !== 'undefined'){
+      searchParams.current = new URLSearchParams(window.location.search)
+    }
+  
+    if(searchParams.current){
+      const name = searchParams.current.get('username') || ''
+      setUserName(name)
+    }
+
+  }, [searchParams])
+
 
   const endSession = async () => {
-      router.push('/goodbye')
+      router.push(`/goodbye?username=${userName}`)
   }
    
     return (

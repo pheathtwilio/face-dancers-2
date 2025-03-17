@@ -33,7 +33,7 @@ const WaitingRoom: React.FC = () => {
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
-  const [stream, setStream] = useState<MediaStream | null>(null)
+  // const [stream, setStream] = useState<MediaStream | null>(null)
 
   const searchParams = useRef<URLSearchParams | null>(null)
 
@@ -122,7 +122,7 @@ const WaitingRoom: React.FC = () => {
 
       EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDevice)
 
-      router.push('/video-room')
+      router.push(`/video-room?username=${userName}`)
   }
 
   const endSession = async () => {

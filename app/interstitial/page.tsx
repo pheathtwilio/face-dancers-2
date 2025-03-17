@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button, Card, Container, Col, Row, Dropdown, Form } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import { Config, usecases } from '@/app/config/config' // Adjust the import path
@@ -7,6 +7,21 @@ import { Config, usecases } from '@/app/config/config' // Adjust the import path
 const Interstitial: React.FC = () => {
     const router = useRouter()
     const [selectedUseCase, setSelectedUseCase] = useState(usecases.collection[0])
+    const [userName, setUserName] = useState<string>('')
+    const searchParams = useRef<URLSearchParams | null>(null)
+
+    useEffect(() => {
+
+      if(typeof window !== 'undefined'){
+        searchParams.current = new URLSearchParams(window.location.search)
+      }
+    
+      if(searchParams.current){
+        const name = searchParams.current.get('username') || ''
+        setUserName(name)
+      }
+
+    }, [searchParams])
 
     const handleSelectUseCase = (index: number) => {
         setSelectedUseCase(usecases.collection[index])
@@ -18,7 +33,7 @@ const Interstitial: React.FC = () => {
 
     const handleEnter = () => {
         Config.useCase = selectedUseCase
-        router.push('/waiting-room')
+        router.push(`/waiting-room?username=${userName}`)
     }
 
     return (
