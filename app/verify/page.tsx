@@ -27,12 +27,6 @@ const COUNTRIES: CountryData[] = [
   { code: '+34', name: 'Spain', flag: '🇪🇸', digitLength: 9 }
 ]
 
-// Define allowed numbers - will change to sync
-const ALLOWED_NUMBERS = [
-  '+11234567890',
-  // Add more allowed numbers as needed
-]
-
 interface VerificationStartResponse {
   success: boolean
   message?: string
