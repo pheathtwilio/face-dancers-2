@@ -66,6 +66,7 @@ const PhoneVerification: React.FC = () => {
   
   const digitRefs = useRef<Array<HTMLInputElement | null>>([])
   const codeRefs = useRef<Array<HTMLInputElement | null>>([])
+  const userData = useRef<object | null>({})
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -88,8 +89,26 @@ const PhoneVerification: React.FC = () => {
     return selectedCountry.code + digits.join('')
   }
 
-  const isNumberAllowed = (number: string): boolean => {
-    return ALLOWED_NUMBERS.includes(number)
+  const isNumberAllowed = async (number: string): Promise<boolean> => {
+
+    const response = await fetch('/api/sync-get-allowed-numbers', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            phoneNumber: number,
+        })
+    })
+
+    const payload = await response.json()
+
+    if(payload.success == true){
+        userData.current = payload.item.data
+        return true
+    }
+
+    return false
   }
 
   const handleDigitChange = (index: number, value: string) => {
@@ -166,8 +185,10 @@ const PhoneVerification: React.FC = () => {
     setSuccess('')
     
     const fullPhoneNumber = getFullPhoneNumber()
+
+    const isAllowed = await isNumberAllowed(fullPhoneNumber)
     
-    if (!isNumberAllowed(fullPhoneNumber)) {
+    if (!isAllowed) {
       setError('This phone number is not authorized for verification.')
       setIsLoading(false)
       return

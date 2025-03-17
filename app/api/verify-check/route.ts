@@ -1,6 +1,5 @@
 import twilio from 'twilio'
 
-// Initialize Twilio client with your credentials
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
