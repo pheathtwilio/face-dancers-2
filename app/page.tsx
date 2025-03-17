@@ -1,7 +1,6 @@
 'use client'
 import { useEffect } from 'react'
-
-import InterstitialRoom from './interstitial/page'
+import PhoneVerification from './verify/page'
 
 export default function Home() {
 
@@ -12,6 +11,6 @@ export default function Home() {
   }, [])
 
   return (
-    <InterstitialRoom/>
+    <PhoneVerification/>
   )
 }
