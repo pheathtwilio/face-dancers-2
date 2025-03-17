@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 
 
 interface CountryData {
-  code: string;       // E.164 country code (e.g., +1)
-  name: string;       // Country name
-  flag: string;       // Flag emoji or code
-  digitLength: number; // Standard mobile number length (excluding country code)
+  code: string       // E.164 country code (e.g., +1)
+  name: string       // Country name
+  flag: string       // Flag emoji or code
+  digitLength: number // Standard mobile number length (excluding country code)
 }
 
 
@@ -16,15 +16,15 @@ const COUNTRIES: CountryData[] = [
   { code: '+1', name: 'United States', flag: '🇺🇸', digitLength: 10 },
   { code: '+44', name: 'United Kingdom', flag: '🇬🇧', digitLength: 10 },
   { code: '+61', name: 'Australia', flag: '🇦🇺', digitLength: 9 },
+  { code: '+55', name: 'Brazil', flag: '🇧🇷', digitLength: 11 },
   { code: '+33', name: 'France', flag: '🇫🇷', digitLength: 9 },
   { code: '+49', name: 'Germany', flag: '🇩🇪', digitLength: 11 },
-  { code: '+81', name: 'Japan', flag: '🇯🇵', digitLength: 10 },
   { code: '+91', name: 'India', flag: '🇮🇳', digitLength: 10 },
-  { code: '+55', name: 'Brazil', flag: '🇧🇷', digitLength: 11 },
+  { code: '+81', name: 'Japan', flag: '🇯🇵', digitLength: 10 },
+  { code: '+39', name: 'Italy', flag: '🇮🇹', digitLength: 10 },
   { code: '+52', name: 'Mexico', flag: '🇲🇽', digitLength: 10 },
   { code: '+82', name: 'South Korea', flag: '🇰🇷', digitLength: 10 },
-  { code: '+34', name: 'Spain', flag: '🇪🇸', digitLength: 9 },
-  { code: '+39', name: 'Italy', flag: '🇮🇹', digitLength: 10 },
+  { code: '+34', name: 'Spain', flag: '🇪🇸', digitLength: 9 }
 ]
 
 // Define allowed numbers - will change to sync
@@ -34,19 +34,19 @@ const ALLOWED_NUMBERS = [
 ]
 
 interface VerificationStartResponse {
-  success: boolean;
-  message?: string;
+  success: boolean
+  message?: string
   verification?: {
-    sid: string;
-    status: string;
+    sid: string
+    status: string
   }
 }
 
 interface VerificationCheckResponse {
-  success: boolean;
-  message?: string;
+  success: boolean
+  message?: string
   verification_check?: {
-    status: string;
+    status: string
   }
 }
 
