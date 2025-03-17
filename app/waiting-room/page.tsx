@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, Card, Container, Col, Form, InputGroup, Row } from 'react-bootstrap'
+import { Alert, Button, Card, Container, Col, Form, InputGroup, Row, Spinner } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import AvatarEvents from '@/util/avatar-types'
 import { VideoEvents } from '@/util/video-types'
@@ -14,9 +14,7 @@ import LLMService from '@/services/llm-service'
 import STTService from '@/services/speech-to-text-service'
 import DeepgramEvents from '@/util/deepgram-types'
 
-
 const WaitingRoom: React.FC = () => {
-
   const router = useRouter()
 
   const avatarServiceRef = useRef<typeof AvatarService | null>(null)
@@ -33,83 +31,65 @@ const WaitingRoom: React.FC = () => {
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
-  // const [stream, setStream] = useState<MediaStream | null>(null)
+  const [loading, setLoading] = useState<boolean>(true) 
 
   const searchParams = useRef<URLSearchParams | null>(null)
 
-  // Global Mounting    
   useEffect(() => {
+    const startDeepgram = () => {
+      EventService.emit(DeepgramEvents.DEEPGRAM_START_SESSION)
+    }
 
-      const startDeepgram = () => {
-        EventService.emit(DeepgramEvents.DEEPGRAM_START_SESSION)
-      }
+    try {
+      avatarServiceRef.current = AvatarService
+      videoServiceRef.current = VideoService
+      deepgramServiceRef.current = DeepgramService
 
+      startDeepgram()
 
-      // this initializes all of these singleton classes
-      try {
-        avatarServiceRef.current = AvatarService
-        videoServiceRef.current = VideoService
-        deepgramServiceRef.current = DeepgramService
+      llmServiceRef.current = LLMService
+      sttServiceRef.current = STTService
+    } catch (e) {
+      console.error(e)
+    }
 
-        startDeepgram()
+    if (avatarServiceRef.current) {
+      EventService.emit(AvatarEvents.AVATAR_INITIALIZE)
+    }
 
-        llmServiceRef.current = LLMService
-        sttServiceRef.current = STTService
+    if (typeof window !== 'undefined') {
+      searchParams.current = new URLSearchParams(window.location.search)
+    }
 
-      }catch(e){
-        console.error(e)
-      }
+    fetchDevices()
 
-      // initialization routine
-      if(avatarServiceRef.current){
-        EventService.emit(AvatarEvents.AVATAR_INITIALIZE)
-      }
+    EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
+      setParticipants((prev) => prev + 1)
+      setParticipantName(userName)
+      setLoading(false) 
+    })
 
-      // get params if window is defined
-      if(typeof window !== 'undefined'){
-        searchParams.current = new URLSearchParams(window.location.search)
-      }
-
-      fetchDevices()
-
-      // setup listeners
-      EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
-        setParticipants(participants+1)
-        // setParticipantName(userName)
-      })
-    
-
-      // cleanup function
-      return () => {
-        EventService.off(DeepgramEvents.DEEPGRAM_START_SESSION, startDeepgram)
-      }  
-        
+    return () => {
+      EventService.off(DeepgramEvents.DEEPGRAM_START_SESSION, startDeepgram)
+    }
   }, [])
 
-  // get the username from the params
   useEffect(() => {
-
-    if(searchParams.current){
+    if (searchParams.current) {
       const name = searchParams.current.get('username') || ''
       setUserName(name)
     }
-
   }, [searchParams])
 
-
-
-
   const fetchDevices = async () => {
-    if(typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
 
     try {
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      setAudioDevices(devices.filter((device) => device.kind === 'audioinput'));
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      setAudioDevices(devices.filter((device) => device.kind === 'audioinput'))
       setVideoDevices(devices.filter((device) => device.kind === 'videoinput'))
-
     } catch (e) {
-        console.error('Error accessing media devices:', e)
+      console.error('Error accessing media devices:', e)
     }
   }
 
@@ -119,114 +99,117 @@ const WaitingRoom: React.FC = () => {
   }
 
   const joinRoom = async () => {
-
-      EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDevice)
-
-      router.push(`/video-room?username=${userName}`)
+    EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDevice)
+    router.push(`/video-room?username=${userName}`)
   }
 
   const endSession = async () => {
-
-      console.log('calling end session')
-      EventService.emit(AvatarEvents.AVATAR_END_SESSION)
-      EventService.emit(VideoEvents.VIDEO_END_SESSION)
-      EventService.emit(STTEvents.STT_END_SESSION)
-      EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
-      router.push('/goodbye')
+    console.log('calling end session')
+    EventService.emit(AvatarEvents.AVATAR_END_SESSION)
+    EventService.emit(VideoEvents.VIDEO_END_SESSION)
+    EventService.emit(STTEvents.STT_END_SESSION)
+    EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
+    router.push(`/goodbye?username=${userName}`)
   }
 
   return (
-      <div className='waiting-room-container'>
-          <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
-          <Row className="w-100 justify-content-center">
-            <Col md={8} lg={6}>
-              <Card className="p-4 shadow-sm border-0">
-                <Card.Body>
-                  <h1 className="text-center fw-bold mb-4">Waiting Room</h1>
+    <div className='waiting-room-container'>
+      <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
+        <Row className="w-100 justify-content-center">
+          <Col md={8} lg={6}>
+            <Card className="p-4 shadow-sm border-0">
+              <Card.Body>
+              <h1 className="text-center fw-bold mb-4 d-flex justify-content-center align-items-center gap-2">
+                Waiting Room 
+                {loading && <Spinner animation="border" variant="dark" size="sm" />}
+              </h1>
 
-                  {participants < 1 ? (
-                    <Alert variant='warning' className='text-center fw-semibold'>
-                      Waiting for more participants to join...
-                    </Alert>
-                  ) : (
-                    <Alert variant='dark' className='text-center fw-semibold'>
-                      Participant <strong>{participantName}</strong> has joined, you can now enter the room.
-                    </Alert>
-                  )}
+                {loading ? (
+                  <div className="text-center">
+                    <p className="mt-3 fw-semibold text-muted">Waiting for the avatar to join...</p>
+                  </div>
+                ) : participants < 1 ? (
+                  <Alert variant="warning" className="text-center fw-semibold">
+                    Waiting for more participants to join...
+                  </Alert>
+                ) : (
+                  <Alert variant="dark" className="text-center fw-semibold">
+                    Participant <strong>{participantName}</strong> has joined, you can now enter the room.
+                  </Alert>
+                )}
 
-                  <Form>
-                    <Form.Group className='mb-3'>
-                      <Form.Label className="fw-semibold">Details</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>Participants</InputGroup.Text>
-                        <Form.Control value={participants.toString()} readOnly className="bg-light" />
-                      </InputGroup>
-                    </Form.Group>
+                <Form>
+                  <Form.Group className='mb-3'>
+                    <Form.Label className="fw-semibold">Details</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text>Participants</InputGroup.Text>
+                      <Form.Control value={participants.toString()} readOnly className="bg-light" />
+                    </InputGroup>
+                  </Form.Group>
 
-                    <Form.Group className='mb-3'>
-                      <Form.Label className="fw-semibold">Username</Form.Label>
-                      <Form.Control
-                        type='text'
-                        placeholder='Enter your username'
-                        value={userName}
-                        onChange={(e) => setUserName(e.target.value)}
-                      />
-                    </Form.Group>
+                  <Form.Group className='mb-3'>
+                    <Form.Label className="fw-semibold">Username</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Enter your username"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                    />
+                  </Form.Group>
 
-                    <Form.Group className='mb-3'>
-                      <Form.Label className="fw-semibold">Audio Device</Form.Label>
-                      <Form.Select
-                        value={selectedAudioDeviceRef.current}
-                        onChange={(e) => changeAudioDevice(e.target.value)}
-                      >
-                        <option value=''>Select Audio Device</option>
-                        {audioDevices.map((device) => (
-                          <option key={device.deviceId} value={device.deviceId}>
-                            {device.label || `Microphone ${device.deviceId.substring(0, 6)}`}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-
-                    <Form.Group className='mb-3'>
-                      <Form.Label className="fw-semibold">Video Device</Form.Label>
-                      <Form.Select
-                        value={selectedVideoDevice}
-                        onChange={(e) => setSelectedVideoDevice(e.target.value)}
-                      >
-                        <option value=''>Select Video Device</option>
-                        {videoDevices.map((device) => (
-                          <option key={device.deviceId} value={device.deviceId}>
-                            {device.label || `Camera ${device.deviceId}`}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-
-                    <Button
-                      variant='dark'
-                      onClick={joinRoom}
-                      className='w-100 btn-lg'
-                      disabled={!userName || !selectedAudioDeviceRef.current || !selectedVideoDevice || participants < 1}
+                  <Form.Group className='mb-3'>
+                    <Form.Label className="fw-semibold">Audio Device</Form.Label>
+                    <Form.Select
+                      value={selectedAudioDeviceRef.current}
+                      onChange={(e) => changeAudioDevice(e.target.value)}
                     >
-                      Join Room
-                    </Button>
+                      <option value="">Select Audio Device</option>
+                      {audioDevices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || `Microphone ${device.deviceId.substring(0, 6)}`}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
 
-                    <Button
-                      variant='secondary'
-                      onClick={endSession}
-                      className='w-100 btn-lg mt-3'
+                  <Form.Group className='mb-3'>
+                    <Form.Label className="fw-semibold">Video Device</Form.Label>
+                    <Form.Select
+                      value={selectedVideoDevice}
+                      onChange={(e) => setSelectedVideoDevice(e.target.value)}
                     >
-                      End Session
-                    </Button>
-                  </Form>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </Container>
+                      <option value="">Select Video Device</option>
+                      {videoDevices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || `Camera ${device.deviceId}`}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
 
-      </div>
+                  <Button
+                    variant="dark"
+                    onClick={joinRoom}
+                    className="w-100 btn-lg"
+                    disabled={!userName || !selectedAudioDeviceRef.current || !selectedVideoDevice || participants < 1}
+                  >
+                    Join Room
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    onClick={endSession}
+                    className="w-100 btn-lg mt-3"
+                  >
+                    End Session
+                  </Button>
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+    </div>
   )
 }
 
