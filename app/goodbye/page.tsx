@@ -24,7 +24,7 @@ export default function GoodbyePage() {
   }, [searchParams])
 
   const handleReturn = () => {
-    router.push(`/?username=${userName}`) // Adjust the path as needed
+    router.push(`/interstitial/?username=${userName}`) // Adjust the path as needed
   }
 
   return (

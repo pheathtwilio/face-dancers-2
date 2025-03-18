@@ -242,8 +242,20 @@ const PhoneVerification: React.FC = () => {
       if (data.success && data.verification_check?.status === 'approved') {
         setSuccess('Phone number verified successfully!')
         
-        localStorage.setItem('phoneVerified', 'true')
-        
+        // localStorage.setItem('phoneVerified', 'true')
+
+        const response = await fetch('/api/sync-create-session', {
+            method: "GET",
+        })
+
+        const data = await response.json()
+
+        if(data.success){
+            localStorage.setItem('session', JSON.stringify(data.item))
+        }else{
+          setError(data.message || 'unable to create session')
+        }
+
         setTimeout(() => {
           router.push(`/interstitial?username=${userName}`)
         }, 1500)

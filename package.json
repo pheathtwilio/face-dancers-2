@@ -19,7 +19,8 @@
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
     "twilio": "^5.4.3",
-    "twilio-video": "^2.29.0"
+    "twilio-video": "^2.29.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

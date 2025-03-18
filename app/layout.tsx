@@ -1,6 +1,7 @@
 // app/layout.tsx
-import './globals.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import './globals.css'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import SessionCheckWrapper from './sessions/SessionWrapper'
 
 export const metadata = {
   title: 'Face Dancers',
@@ -14,7 +15,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <SessionCheckWrapper>{children}</SessionCheckWrapper>
+      </body>
     </html>
   );
 }
