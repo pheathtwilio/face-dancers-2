@@ -314,46 +314,63 @@ const PhoneVerification: React.FC = () => {
 
   return (
     <Container fluid className="vh-100 d-flex justify-content-center align-items-center bg-light">
-      <Row className="w-100">
-        <Col md={{ span: 6, offset: 3 }}>
-          <Card className="p-4 shadow-sm border-0 w-100">
-            <Card.Body className="d-flex flex-column gap-3">
-              <h1 className="fw-bold text-center">Phone Verification</h1>
-              <p className="lead text-muted text-center">
-                {step === 'phone' 
-                  ? 'Please enter your phone number to verify your identity.'
-                  : 'Enter the verification code sent to your phone.'}
-              </p>
-  
-              {error && <Alert variant="danger">{error}</Alert>}
-              {success && <Alert variant="success">{success}</Alert>}
-  
-              <Form className="d-flex flex-column gap-3">
-                {step === 'phone' ? (
-                  <>
-                    <Form.Group>
-                      <Form.Label className="text-start w-100 fw-semibold">Phone Number</Form.Label>
-                      
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <Dropdown>
-                          <Dropdown.Toggle variant="outline-secondary" id="dropdown-country" className="d-flex align-items-center justify-content-between" style={{ width: '120px', height: '38px' }}>
-                            <span>{selectedCountry.flag} {selectedCountry.code}</span>
-                          </Dropdown.Toggle>
-  
-                          <Dropdown.Menu style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                            {COUNTRIES.map((country) => (
-                              <Dropdown.Item 
-                                key={country.code} 
-                                onClick={() => handleCountrySelect(country)}
-                                active={country.code === selectedCountry.code}
-                              >
-                                <span>{country.flag} {country.name} ({country.code})</span>
-                              </Dropdown.Item>
-                            ))}
-                          </Dropdown.Menu>
-                        </Dropdown>
-
-                        <div className="d-flex gap-2">
+    <Row className="w-100">
+      <Col md={{ span: 6, offset: 3 }}>
+        <Card className="p-4 shadow-sm border-0 w-75">
+          <Card.Body className="d-flex flex-column gap-3">
+            <Row>
+              <Col>
+                <h1 className="fw-bold text-center">Phone Verification</h1>
+              </Col>
+            </Row>
+            <Row>
+              <Col>
+                <p className="lead text-muted text-center">
+                  {step === 'phone'
+                    ? 'Please enter your phone number to verify your identity.'
+                    : 'Enter the verification code sent to your phone.'}
+                </p>
+              </Col>
+            </Row>
+            {error && (
+              <Row>
+                <Col>
+                  <Alert variant="danger">{error}</Alert>
+                </Col>
+              </Row>
+            )}
+            {success && (
+              <Row>
+                <Col>
+                  <Alert variant="success">{success}</Alert>
+                </Col>
+              </Row>
+            )}
+            <Form className="d-flex flex-column gap-3">
+              {step === 'phone' ? (
+                <>
+                  <Row>
+                    <Col>
+                      <Form.Group>
+                        <Form.Label className="fw-semibold">Phone Number</Form.Label>
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <Dropdown>
+                            <Dropdown.Toggle variant="outline-secondary" style={{ width: '120px', height: '38px' }}>
+                              <span>{selectedCountry.flag} {selectedCountry.code}</span>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                              {COUNTRIES.map((country) => (
+                                <Dropdown.Item 
+                                  key={country.code} 
+                                  onClick={() => handleCountrySelect(country)}
+                                  active={country.code === selectedCountry.code}
+                                >
+                                  {country.flag} {country.name} ({country.code})
+                                </Dropdown.Item>
+                              ))}
+                            </Dropdown.Menu>
+                          </Dropdown>
+                          <div className="d-flex gap-2 justify-content-start" style={{ maxWidth: 'fit-content' }}>
                           {Array.from({ length: selectedCountry.digitLength }).map((_, index) => (
                             <Form.Control
                               key={`digit-${index}`}
@@ -365,93 +382,97 @@ const PhoneVerification: React.FC = () => {
                               onKeyDown={(e) => handleKeyDown(index, e, 'phone')}
                               onPaste={(e) => handlePaste(e, 'phone')}
                               maxLength={1}
-                              style={{ width: '40px', height: '40px', fontSize: '18px', textAlign: 'center' }}
+                              style={{
+                                width: '40px',
+                                height: '40px',
+                                fontSize: '18px',
+                                textAlign: 'center',
+                              }}
                               className="form-control"
                             />
                           ))}
                         </div>
-                      </div>
-                      
-                      <Form.Text className="text-muted">
-                        Select your country code and enter your phone number
-                      </Form.Text>
-                    </Form.Group>
-  
-                    <Form.Group>
-                      <Form.Label className="text-start w-100 fw-semibold">Verification Method</Form.Label>
-                      <div className="d-flex gap-3">
-                        <Form.Check
-                          type="radio"
-                          label="SMS"
-                          name="verifyMethod"
-                          id="sms"
-                          checked={verifyMethod === 'sms'}
-                          onChange={() => setVerifyMethod('sms')}
-                        />
-                        <Form.Check
-                          type="radio"
-                          label="Phone Call"
-                          name="verifyMethod"
-                          id="call"
-                          checked={verifyMethod === 'call'}
-                          onChange={() => setVerifyMethod('call')}
-                        />
-                      </div>
-                    </Form.Group>
-  
-                    <Button 
-                      variant="dark" 
-                      onClick={startVerification} 
-                      disabled={isLoading || !isPhoneComplete()}
-                      className="mt-3" 
-                      style={{ width: '200px', alignSelf: 'center' }} // fixed width and centered button
-                    >
-                      {isLoading ? (
-                        <>
-                          <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                          Sending...
-                        </>
-                      ) : (
-                        `Send ${verifyMethod === 'sms' ? 'Code' : 'Call'}`
-                      )}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Form.Group>
-                      <Form.Label className="text-start w-100 fw-semibold">Verification Code</Form.Label>
-                      
-                      <div className="d-flex justify-content-center gap-2 mb-2">
-                        {Array.from({ length: 6 }).map((_, index) => (
-                          <Form.Control
-                            key={`code-${index}`}
-                            ref={setCodeRef(index)}
-                            type="text"
-                            inputMode="numeric"
-                            value={verificationCode[index] || ''}
-                            onChange={(e) => handleCodeChange(index, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(index, e, 'code')}
-                            onPaste={(e) => handlePaste(e, 'code')}
-                            maxLength={1}
-                            style={{ width: '50px', height: '50px', fontSize: '24px', textAlign: 'center' }}
-                            className="form-control"
+                        </div>
+                        <Form.Text className="text-muted">
+                          Select your country code and enter your phone number.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col>
+                      <Form.Group>
+                        <Form.Label className="fw-semibold">Verification Method</Form.Label>
+                        <div className="d-flex gap-3">
+                          <Form.Check
+                            type="radio"
+                            label="SMS"
+                            name="verifyMethod"
+                            checked={verifyMethod === 'sms'}
+                            onChange={() => setVerifyMethod('sms')}
                           />
-                        ))}
-                      </div>
-                      
-                      <Form.Text className="text-muted text-center d-block">
-                        Enter the 6-digit code sent to {selectedCountry.code} {digits.join('')}
-                      </Form.Text>
-                    </Form.Group>
-  
-                    <div className="d-flex gap-3">
+                          <Form.Check
+                            type="radio"
+                            label="Phone Call"
+                            name="verifyMethod"
+                            checked={verifyMethod === 'call'}
+                            onChange={() => setVerifyMethod('call')}
+                          />
+                        </div>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col className="text-center">
+                      <Button 
+                        variant="dark" 
+                        onClick={startVerification} 
+                        disabled={isLoading || !isPhoneComplete()}
+                        className="mt-3"
+                        style={{ width: '200px' }}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Spinner as="span" animation="border" size="sm" className="me-2" />
+                            Sending...
+                          </>
+                        ) : (
+                          `Send ${verifyMethod === 'sms' ? 'Code' : 'Call'}`
+                        )}
+                      </Button>
+                    </Col>
+                  </Row>
+                </>
+              ) : (
+                <>
+                  <Row>
+                    <Col>
+                      <Form.Group>
+                        <Form.Label className="fw-semibold">Verification Code</Form.Label>
+                        <div className="d-flex justify-content-center gap-2 mb-2">
+                          {Array.from({ length: 6 }).map((_, index) => (
+                            <Form.Control
+                              key={index}
+                              type="text"
+                              inputMode="numeric"
+                              value={verificationCode[index] || ''}
+                              onChange={(e) => handleCodeChange(index, e.target.value)}
+                              maxLength={1}
+                              style={{ width: '50px', height: '50px', fontSize: '24px', textAlign: 'center' }}
+                            />
+                          ))}
+                        </div>
+                        <Form.Text className="text-muted text-center d-block">
+                          Enter the 6-digit code sent to {selectedCountry.code} {digits.join('')}
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col className="d-flex justify-content-center gap-3">
                       <Button 
                         variant="outline-dark" 
-                        onClick={() => {
-                          setStep('phone')
-                          setError('')
-                          setSuccess('')
-                        }}
+                        onClick={() => { setStep('phone'); setError(''); setSuccess(''); }}
                         className="mt-3 w-50"
                       >
                         Back
@@ -464,22 +485,23 @@ const PhoneVerification: React.FC = () => {
                       >
                         {isLoading ? (
                           <>
-                            <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                            <Spinner as="span" animation="border" size="sm" className="me-2" />
                             Verifying...
                           </>
                         ) : (
                           'Verify Code'
                         )}
                       </Button>
-                    </div>
-                  </>
-                )}
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+                    </Col>
+                  </Row>
+                </>
+              )}
+            </Form>
+          </Card.Body>
+        </Card>
+      </Col>
+    </Row>
+  </Container>
   )
   
   
