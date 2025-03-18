@@ -6,7 +6,7 @@ const client = twilio(
 )
 
 const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SID
-const SYNC_MAP_SID = process.env.TWILIO_SYNC_MAP_SID
+const SYNC_MAP_SID = process.env.TWILIO_SYNC_MAP_NUMBERS_SID
 
 export async function POST(request: Request) {
   try {
