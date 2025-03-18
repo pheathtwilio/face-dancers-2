@@ -3,16 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Card, Container, Col, Form, ListGroup, Row } from 'react-bootstrap'
 import AvatarService from '@/services/avatar-service'
 import AvatarEvents from '@/util/avatar-types'
-import AvatarServiceClass from '@/services/avatar-service'
-import { useRouter } from 'next/navigation'
 import EventService from '@/services/event-service'
 import VideoService from '@/services/video-service'
 import { VideoEvents } from '@/util/video-types'
 
 
 const WaitingRoom: React.FC = () => {
-
-    // const router = useRouter()
 
     const avatarServiceRef = useRef<typeof AvatarService | null>(null)
     const videoServiceRef = useRef<typeof VideoService | null>(null)
