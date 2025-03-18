@@ -33,6 +33,6 @@ export async function POST(request: Request) {
   
   } catch (e) {
     console.error('Twilio sync error:', e)
-    return new Response(JSON.stringify({ message: e || 'failed to start verification' }), { status: 500 })
+    return new Response(JSON.stringify({ message: e || 'failed to check sync' }), { status: 500 })
   }
 }
