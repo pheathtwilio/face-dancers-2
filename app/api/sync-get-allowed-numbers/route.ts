@@ -1,9 +1,7 @@
 import twilio from 'twilio'
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-)
+const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
+const client = twilio(TWILIO_API_KEY, TWILIO_API_SECRET, {accountSid: TWILIO_ACCOUNT_SID})
 
 const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SID
 const SYNC_MAP_SID = process.env.TWILIO_SYNC_MAP_NUMBERS_SID
