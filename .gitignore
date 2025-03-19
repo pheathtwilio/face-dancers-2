@@ -172,3 +172,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 >>>>>>> e678aaa (Committing first stable build)
+
+# Sentry Config File
+.env.sentry-build-plugin
