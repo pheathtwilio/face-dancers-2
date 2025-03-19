@@ -18,3 +18,34 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Custom Modal Style */
+.custom-modal .modal-content {
+  background-color: #343a40; /* Dark background */
+  color: white; /* White text */
+  border-radius: 10px; /* Rounded corners */
+}
+
+.custom-modal .modal-header {
+  background-color: #212529; /* Dark Blue header */
+  color: white;
+  border-bottom: 1px solid #ddd; /* Light border */
+}
+
+.custom-modal .modal-footer {
+  background-color: #343a40; /* Dark footer */
+  color: white;
+  border-top: 1px solid #ddd;
+}
+
+.custom-modal .modal-title {
+  font-weight: bold;
+}
+
+.custom-modal .btn-dark {
+  background-color: #212529; /* Dark Blue button */
+  border: none;
+}
+
+.custom-modal .btn-dark:hover {
+  background-color: #218838; /* Darker shade on hover */
+}

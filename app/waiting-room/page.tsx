@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, Card, Container, Col, Form, InputGroup, Row, Spinner } from 'react-bootstrap'
+import { Alert, Button, Card, Container, Col, Form, InputGroup, Modal, Row, Spinner } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import AvatarEvents from '@/util/avatar-types'
 import { VideoEvents } from '@/util/video-types'
@@ -32,8 +32,15 @@ const WaitingRoom: React.FC = () => {
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true) 
+  const [audioAccessGranted, setAudioAccessGranted] = useState(false)
+  const [videoAccessGranted, setVideoAccessGranted] = useState(false)
+  const [showPermissionModal, setShowPermissionModal] = useState(false)
 
   const searchParams = useRef<URLSearchParams | null>(null)
+  
+
+
+
 
   useEffect(() => {
     const startDeepgram = () => {
@@ -61,6 +68,7 @@ const WaitingRoom: React.FC = () => {
       searchParams.current = new URLSearchParams(window.location.search)
     }
 
+    checkMediaPermissions()
     fetchDevices()
 
     EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
@@ -80,6 +88,34 @@ const WaitingRoom: React.FC = () => {
       setUserName(name)
     }
   }, [searchParams])
+
+  const checkMediaPermissions = async () => {
+    try {
+      const audioStatus = await navigator.permissions.query({ name: "microphone" })
+      const videoStatus = await navigator.permissions.query({ name: "camera" })
+  
+      setAudioAccessGranted(audioStatus.state === "granted")
+      setVideoAccessGranted(videoStatus.state === "granted")
+  
+      audioStatus.onchange = () => {
+        setAudioAccessGranted(audioStatus.state === "granted")
+      }
+  
+      videoStatus.onchange = () => {
+        setVideoAccessGranted(videoStatus.state === "granted")
+      }
+  
+      console.log(`AudioAccess: ${audioStatus.state}, VideoAccess: ${videoStatus.state}`)
+  
+      // Show modal if either permission is not granted
+      if (audioStatus.state !== "granted" || videoStatus.state !== "granted") {
+        setShowPermissionModal(true)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+  
 
   const fetchDevices = async () => {
     if (typeof window === 'undefined') return
@@ -123,6 +159,36 @@ const WaitingRoom: React.FC = () => {
                 Waiting Room 
                 {loading && <Spinner animation="border" variant="dark" size="sm" />}
               </h1>
+
+                <Modal
+                  show={showPermissionModal}
+                  onHide={() => setShowPermissionModal(false)}
+                  centered
+                  dialogClassName="custom-modal" 
+                >
+                  <Modal.Header closeButton>
+                    <Modal.Title>Media Permissions Required</Modal.Title>
+                  </Modal.Header>
+                  <Modal.Body>
+                    <p>We need access to your microphone and camera for this meeting.</p>
+                    {!audioAccessGranted && (
+                      <p>
+                        🎤 Microphone access is <strong>not granted</strong>.
+                      </p>
+                    )}
+                    {!videoAccessGranted && (
+                      <p>
+                        📷 Camera access is <strong>not granted</strong>.
+                      </p>
+                    )}
+                    <p>Please allow permissions in your browser settings and refresh the page.</p>
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button variant="dark" onClick={() => window.location.reload()}>
+                      Reload
+                    </Button>
+                  </Modal.Footer>
+                </Modal>
 
                 {loading ? (
                   <div className="text-center">
