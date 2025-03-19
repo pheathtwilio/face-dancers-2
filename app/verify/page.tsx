@@ -59,7 +59,7 @@ const PhoneVerification: React.FC = () => {
   const searchParams = useRef<URLSearchParams | null>(null)
   
   const digitRefs = useRef<Array<HTMLInputElement | null>>([])
-  const codeRefs = useRef<Array<HTMLInputElement | null>>([])
+  const codeRefs = useRef<Array<HTMLInputElement | null>>(new Array(6).fill(null))
   const userData = useRef<object | null>({})
 
   useEffect(() => {
@@ -121,15 +121,19 @@ const PhoneVerification: React.FC = () => {
 
   const handleCodeChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return
-
+  
     const newCode = [...verificationCode]
-    newCode[index] = value.slice(0, 1) 
-
+    newCode[index] = value.slice(0, 1)
     setVerificationCode(newCode)
-
-    if (value && index < 5) {
-      codeRefs.current[index + 1]?.focus()
-    }
+  
+    setTimeout(() => {
+      console.log("CodeRefs after update:", codeRefs.current) // Debugging
+  
+      if (value && index < 5 && codeRefs.current[index + 1]) {
+        console.log("Focusing on:", index + 1, codeRefs.current[index + 1])
+        codeRefs.current[index + 1]?.focus()
+      }
+    }, 0)
   }
 
   type FormElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -453,12 +457,15 @@ const PhoneVerification: React.FC = () => {
                           {Array.from({ length: 6 }).map((_, index) => (
                             <Form.Control
                               key={index}
+                              ref={(el) => {
+                                if (el) codeRefs.current[index] = el;
+                              }}
                               type="text"
                               inputMode="numeric"
-                              value={verificationCode[index] || ''}
+                              value={verificationCode[index] || ""}
                               onChange={(e) => handleCodeChange(index, e.target.value)}
                               maxLength={1}
-                              style={{ width: '50px', height: '50px', fontSize: '24px', textAlign: 'center' }}
+                              style={{ width: "50px", height: "50px", fontSize: "24px", textAlign: "center" }}
                             />
                           ))}
                         </div>
