@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs'
+
 const { TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 
 export async function GET(req: Request){
@@ -19,14 +21,14 @@ export async function GET(req: Request){
         return new Response(JSON.stringify({ rooms: rooms }), { status: 200 })
     
     }catch(e){
-        console.error('Error listing rooms:', e)
+        Sentry.captureMessage(`API-Twilio-Video-List-Rooms: Error listing rooms ${e}`, 'error')
         return new Response(JSON.stringify({ error: 'Failed to list Video Rooms' }), { status: 500 })
     }
 
 }
 
 export async function POST(req: Request){
-    console.error('POST method not allowed when requesting to list a room')
+    Sentry.captureMessage(`API-Twilio-Video-List-Rooms: POST method not allowed when requesting to create a room`, 'error')
     return new Response(JSON.stringify({error: 'POST method not allowed'}), {status: 405})
 }
 

@@ -14,6 +14,8 @@ import LLMService from '@/services/llm-service'
 import STTService from '@/services/speech-to-text-service'
 import DeepgramEvents from '@/util/deepgram-types'
 
+import * as Sentry from '@sentry/nextjs'
+
 const WaitingRoom: React.FC = () => {
   const router = useRouter()
 
@@ -57,7 +59,7 @@ const WaitingRoom: React.FC = () => {
       llmServiceRef.current = LLMService
       sttServiceRef.current = STTService
     } catch (e) {
-      console.error(e)
+      Sentry.captureMessage(`Waiting-Room: Mounting Error ${e}`, 'error')
     }
 
     if (avatarServiceRef.current) {
@@ -104,15 +106,15 @@ const WaitingRoom: React.FC = () => {
       videoStatus.onchange = () => {
         setVideoAccessGranted(videoStatus.state === "granted")
       }
-  
-      console.log(`AudioAccess: ${audioStatus.state}, VideoAccess: ${videoStatus.state}`)
+
+      Sentry.captureMessage(`AudioAccess: ${audioStatus.state}, VideoAccess: ${videoStatus.state}`, 'info')
   
       // Show modal if either permission is not granted
       if (audioStatus.state !== "granted" || videoStatus.state !== "granted") {
         setShowPermissionModal(true)
       }
     } catch (e) {
-      console.error(e)
+      Sentry.captureMessage(`Waiting-Room: Check Media Permissions Error ${e}`, 'error')
     }
   }
   
@@ -125,7 +127,7 @@ const WaitingRoom: React.FC = () => {
       setAudioDevices(devices.filter((device) => device.kind === 'audioinput'))
       setVideoDevices(devices.filter((device) => device.kind === 'videoinput'))
     } catch (e) {
-      console.error('Error accessing media devices:', e)
+      Sentry.captureMessage(`Waiting-Room: Error Accessing Media Devices ${e}`, 'error')
     }
   }
 
@@ -140,7 +142,7 @@ const WaitingRoom: React.FC = () => {
   }
 
   const endSession = async () => {
-    console.log('calling end session')
+    Sentry.captureMessage('Waiting-Room: Calling End Session')
     EventService.emit(AvatarEvents.AVATAR_END_SESSION)
     EventService.emit(VideoEvents.VIDEO_END_SESSION)
     EventService.emit(STTEvents.STT_END_SESSION)

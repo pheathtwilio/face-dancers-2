@@ -1,9 +1,11 @@
+import * as Sentry from '@sentry/nextjs'
+
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY
 
 export async function GET(_req: Request){
 
-    console.error('GET method not allowed when requesting JWT token')
-    return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
+  Sentry.captureMessage(`API-Avatar: GET method not allowed when requesting JWT token`, 'error')
+  return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
 
 }
 
@@ -29,7 +31,7 @@ export async function POST(_req: Request){
         return new Response(JSON.stringify({ token: wallet.data.token }), { status: 200 })
 
     } catch (e) {
-      console.error('Error generating token:', e)
+      Sentry.captureMessage(`API-Avatar: Error generating token ${e}`, 'error')
       return new Response(JSON.stringify({ error: 'Failed to retrieve HEYGEN token' }), { status: 500 })
     }
 

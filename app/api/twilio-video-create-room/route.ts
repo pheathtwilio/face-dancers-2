@@ -1,8 +1,10 @@
+import * as Sentry from '@sentry/nextjs'
+
 const { TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 
 export async function GET(req: Request){
 
-    console.error('GET method not allowed when requesting to create a room')
+    Sentry.captureMessage(`API-Twilio-Video-Create-Room: GET method not allowed when requesting to create a room`, 'error')
     return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
 
 }
@@ -34,8 +36,8 @@ export async function POST(req: Request){
         return new Response(JSON.stringify({ room: roomData }), { status: 200 })
 
     } catch (e) {
-      console.error('Error generating room:', e)
-      return new Response(JSON.stringify({ error: 'Failed to generate Video Room' }), { status: 500 })
+        Sentry.captureMessage(`API-Twilio-Video-Create-Room: Error generating a room ${e}`, 'error')
+        return new Response(JSON.stringify({ error: 'Failed to generate Video Room' }), { status: 500 })
     }
 
 }

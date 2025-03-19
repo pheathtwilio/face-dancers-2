@@ -10,6 +10,8 @@ import EventService from './event-service'
 import AvatarEvents from '../util/avatar-types'
 import { Config } from '@/app/config/config'
 
+import * as Sentry from '@sentry/nextjs'
+
 class AvatarServiceClass extends EventEmitter {
     private static instance: AvatarServiceClass
 
@@ -67,7 +69,7 @@ class AvatarServiceClass extends EventEmitter {
             const wallet = await response.json()
             return wallet.token
         } catch (e) {
-            console.error('Error fetching access token:', e)
+            Sentry.captureMessage(`Avatar-Service: Error Fetching Access Token ${e}`, 'error')
         }
         return ''
     }
@@ -82,20 +84,20 @@ class AvatarServiceClass extends EventEmitter {
             await this.endSession()
         })
         this.avatar.on(StreamingEvents.STREAM_READY, (e) => {
-            console.log(AvatarEvents.AVATAR_STREAM_READY)
+            Sentry.captureMessage(AvatarEvents.AVATAR_STREAM_READY, 'info')
             if(e.detail)
                 this.stream = e.detail
 
-            EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, this.stream) // other services will listen for this 
+            EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, this.stream) 
         })
         this.avatar.on(StreamingEvents.USER_START, (e) => {})
         this.avatar.on(StreamingEvents.USER_STOP, (e) => {})
         this.avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-            console.log('avatar started talking')
+            Sentry.captureMessage('Avatar-Service: Avatar started talking', 'info')
             EventService.emit(AvatarEvents.AVATAR_START_TALKING)
         })
         this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-            console.log('avatar stopped talking')
+            Sentry.captureMessage('Avatar-Service: Avatar stopped talking', 'info')
             EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
         })
 
@@ -110,7 +112,7 @@ class AvatarServiceClass extends EventEmitter {
             })
 
         }catch(e){
-            console.error(e)
+            Sentry.captureMessage(`Avatar Service: Error Creating Avatar ${e}`, 'error')
         }finally{
             this.isLoadingSession = false
         }
@@ -122,7 +124,7 @@ class AvatarServiceClass extends EventEmitter {
         const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY
 
         if(!apiKey){
-            console.error('HEYGEN APIKEY is not defined')
+            Sentry.captureMessage(`Avatar-Service: HEYGEN_API_KEY is not defined`, 'error')
             return null
         }
 
@@ -153,7 +155,7 @@ class AvatarServiceClass extends EventEmitter {
 
             EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (data))
 
-        }catch(e){console.error(e)}
+        }catch(e){Sentry.captureMessage(`Avatar-Service: Error Creating Session ${e}`, 'error')}
     }
 
     public closeSession = async (id: string) => {
@@ -161,7 +163,7 @@ class AvatarServiceClass extends EventEmitter {
         const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY
 
         if(!apiKey){
-            console.error('HEYGEN APIKEY is not defined')
+            Sentry.captureMessage(`Avatar-Service: HEYGEN API KEY is not defined`, 'error')
             return null
         }
 
@@ -181,32 +183,32 @@ class AvatarServiceClass extends EventEmitter {
             }
 
             const data = await response.json()
-            console.log(data)
+            Sentry.captureMessage(`Avatar-Service: Capturing close session data ${data}`, 'info')
             return data
 
-        }catch(e){console.error(e)}
+        }catch(e){Sentry.captureMessage(`Avatar-Service: Stop Streaming Error ${e}`, 'error')}
     }
 
     public endSession = async () => {
-        console.log(AvatarEvents.AVATAR_SESSION_ENDED)
+        Sentry.captureMessage(`Avatar-Service: ${AvatarEvents.AVATAR_SESSION_ENDED}`, 'info')
         EventService.emit(AvatarEvents.AVATAR_SESSION_ENDED)
         if(this.avatar)
             try{
                 await this.avatar.stopAvatar()
                 this.stream = undefined
-            }catch(e){console.error(e)}    
+            }catch(e){Sentry.captureMessage(`Avatar-Service: Session End Error ${e}`, 'error')}    
     }
 
     public handleSpeak = async (text: string) => {
 
         if (!this.avatar) {
-            console.log('Avatar API not initialized')
+            Sentry.captureMessage(`Avatar-Service: Avatar API not initialized`, 'info')
             return
         }
 
         // Interrupt if speaking
-        await this.avatar.interrupt().catch((e) => console.log(e.message))
-        await this.avatar.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => console.log(e.message))
+        await this.avatar.interrupt().catch((e) => Sentry.captureMessage(`Avatar-Service: Interrupt - ${e.message}`, 'info'))
+        await this.avatar.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => Sentry.captureMessage(`Avatar-Service: Speaking - ${e.message}`, 'info'))
 
     }
 

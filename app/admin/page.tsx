@@ -7,6 +7,8 @@ import EventService from '@/services/event-service'
 import VideoService from '@/services/video-service'
 import { VideoEvents } from '@/util/video-types'
 
+import * as Sentry from '@sentry/nextjs'
+
 
 const WaitingRoom: React.FC = () => {
 
@@ -37,7 +39,7 @@ const WaitingRoom: React.FC = () => {
           listRooms()
 
         }catch(e){
-          console.error(e)
+          Sentry.captureMessage(`Admin: ${e}`, 'error')
         }
 
     }, [])

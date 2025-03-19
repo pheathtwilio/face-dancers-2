@@ -4,6 +4,8 @@ import EventEmitter from 'events'
 import STTEvents from '@/util/stt-types'
 import { createClient, DeepgramClient, ListenLiveClient, LiveTranscriptionEvents } from '@deepgram/sdk'
 
+import * as Sentry from '@sentry/nextjs'
+
 type DeepgramSTTOptions = {
     apiKey: string
     config: {
@@ -55,16 +57,15 @@ class DeepgramServiceClass extends EventEmitter {
 
     private initialize = async () => {
 
-        console.log('deepgram-service - establishing client')
+        Sentry.captureMessage(`Deepgram-Service: Establishing Client`, 'info')
         this.deepgram = createClient(this.options?.apiKey)
         if(!this.deepgram) throw new Error('No Deepgram client was established')
 
-        console.log('deepgram-service - establishing connection')
+        Sentry.captureMessage(`Deepgram-Service: Establishing Connection`, 'info')
         this.connection = await this.deepgram?.listen.live(this.options?.config)
         if(!this.connection) throw new Error('No Deepgram connection was established')
 
-
-        console.log(`deepgram-service - connection state ${this.connection?.getReadyState()}`)
+        Sentry.captureMessage(`Deepgram-Service: Connection State ${this.connection?.getReadyState()}`, 'info')
 
         this.connection?.on(LiveTranscriptionEvents.Open, () => {
 
@@ -88,7 +89,7 @@ class DeepgramServiceClass extends EventEmitter {
                     const utterance = is_finals.join(' ')
                     is_finals = []
                     this.sendUtterance(utterance)
-                    console.log(`deepgram-service - ${sentence}`)
+                    Sentry.captureMessage(`Deepgram-Service: Utterance - ${sentence}`, 'info')
                 }else{
                 // good for real-time captioning
                 }
@@ -101,11 +102,11 @@ class DeepgramServiceClass extends EventEmitter {
         this.connection?.on(LiveTranscriptionEvents.Close, () => {this.connection?.disconnect()})
         this.connection?.on(LiveTranscriptionEvents.Error, (e) => {
 
-            console.error(e)
+            Sentry.captureMessage(`Deepgram-Service: Transcription Event Error ${e}`, 'error')
             try{
                 this.connection?.removeAllListeners()
                 this.connection?.disconnect()
-            }catch(e){console.error(e)}
+            }catch(e){Sentry.captureMessage(`Deepgram-Service: Disconnection Error ${e}`, 'error')}
             
         })
 

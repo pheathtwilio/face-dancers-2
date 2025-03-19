@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Button, Card, Container, Col, Row, Form, Alert, Spinner, Dropdown } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 
+import * as Sentry from '@sentry/nextjs'
+
 
 interface CountryData {
   code: string       // E.164 country code (e.g., +1)
@@ -213,9 +215,9 @@ const PhoneVerification: React.FC = () => {
       } else {
         setError(data.message || 'Failed to start verification process.')
       }
-    } catch (err) {
+    } catch (e) {
       setError('An error occurred during the verification process.')
-      console.error('Verification error:', err)
+      Sentry.captureMessage(`Verify: Verification Error ${e}`, 'error')
     } finally {
       setIsLoading(false)
     }
@@ -263,9 +265,9 @@ const PhoneVerification: React.FC = () => {
       } else {
         setError(data.message || 'Invalid verification code.')
       }
-    } catch (err) {
+    } catch (e) {
       setError('An error occurred during the verification process.')
-      console.error('Verification check error:', err)
+      Sentry.captureMessage(`Verify: Verification Error ${e}`, 'error')
     } finally {
       setIsLoading(false)
     }

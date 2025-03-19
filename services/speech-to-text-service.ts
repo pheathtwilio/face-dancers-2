@@ -2,6 +2,8 @@ import STTEvents from '@/util/stt-types'
 import EventService from './event-service'
 import EventEmitter from 'events'
 
+import * as Sentry from '@sentry/nextjs'
+
 class STTServiceClass extends EventEmitter {
 
     private static instance: STTServiceClass
@@ -15,7 +17,7 @@ class STTServiceClass extends EventEmitter {
 
         EventService.on(STTEvents.STT_ATTACH_AUDIO_TRACK, (audioDeviceId) => {
 
-            console.log(`speech-to-text-service - attaching audio track for ${audioDeviceId}`)
+            Sentry.captureMessage(`STT-Service: attaching audio track for ${audioDeviceId}`, 'info')
             
             if(!audioDeviceId) throw new Error('no audio device id has been passed')
             this.audioDeviceId = audioDeviceId
@@ -42,7 +44,7 @@ class STTServiceClass extends EventEmitter {
         let audioContext = new window.AudioContext 
         if(audioContext.state === 'suspended' || audioContext.state === 'closed'){
             await audioContext.resume()
-            console.log('Audio Context Resumed')
+            Sentry.captureMessage(`STT-Service: Audio Context Resumed}`, 'info')
         }
 
         const constraints = {
@@ -67,7 +69,7 @@ class STTServiceClass extends EventEmitter {
             this.mediaRecorder?.stop()
         }
 
-        this.mediaRecorder.onerror = (e) => {console.error(e)}
+        this.mediaRecorder.onerror = (e) => {Sentry.captureMessage(`STT-Service: Media Recorder Error ${e}`, 'error')}
 
     }
 

@@ -1,5 +1,7 @@
 import twilio from 'twilio'
 
+import * as Sentry from '@sentry/nextjs'
+
 const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 const client = twilio(TWILIO_API_KEY, TWILIO_API_SECRET, {accountSid: TWILIO_ACCOUNT_SID})
 
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
     }), { status: 200 })
   
   } catch (e: any) {
-    console.error('Twilio verification check error:', e)
+    Sentry.captureMessage(`API-Verify-Check: Twilio Verification Check Error ${e}`, 'error')
     return new Response(JSON.stringify({ 
         success: false,
         message: e.message || 'failed to start verification' 
