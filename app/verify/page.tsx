@@ -126,11 +126,8 @@ const PhoneVerification: React.FC = () => {
     newCode[index] = value.slice(0, 1)
     setVerificationCode(newCode)
   
-    setTimeout(() => {
-      console.log("CodeRefs after update:", codeRefs.current) // Debugging
-  
+    setTimeout(() => {  
       if (value && index < 5 && codeRefs.current[index + 1]) {
-        console.log("Focusing on:", index + 1, codeRefs.current[index + 1])
         codeRefs.current[index + 1]?.focus()
       }
     }, 0)
