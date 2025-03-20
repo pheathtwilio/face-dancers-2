@@ -75,7 +75,7 @@ const WaitingRoom: React.FC = () => {
 
     EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
       setParticipants((prev) => prev + 1)
-      setParticipantName(userName)
+      // setParticipantName(userName) 
       setLoading(false) 
     })
 
