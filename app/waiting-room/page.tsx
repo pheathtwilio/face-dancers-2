@@ -93,8 +93,8 @@ const WaitingRoom: React.FC = () => {
 
   const checkMediaPermissions = async () => {
     try {
-      const audioStatus = await navigator.permissions.query({ name: "microphone" })
-      const videoStatus = await navigator.permissions.query({ name: "camera" })
+      const audioStatus = await navigator.permissions.query({ name: "microphone" as PermissionName})
+      const videoStatus = await navigator.permissions.query({ name: "camera" as PermissionName})
   
       setAudioAccessGranted(audioStatus.state === "granted")
       setVideoAccessGranted(videoStatus.state === "granted")
