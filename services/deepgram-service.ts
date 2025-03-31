@@ -21,7 +21,7 @@ class DeepgramServiceClass extends EventEmitter {
     private deepgram: DeepgramClient | null = null
     private connection: ListenLiveClient | undefined = undefined
     private options: DeepgramSTTOptions | null = {
-        apiKey: process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || 'undefined',
+        apiKey: '',
         config: {
             language: 'en',
             punctuate: true,
@@ -58,7 +58,13 @@ class DeepgramServiceClass extends EventEmitter {
     private initialize = async () => {
 
         Sentry.captureMessage(`Deepgram-Service: Establishing Client`, 'info')
-        this.deepgram = createClient(this.options?.apiKey)
+
+        // get the key and add to options
+        const response = await fetch('/api/deepgram-get-key')
+        const data = await response.json()
+        this.options!.apiKey = data.item
+
+        this.deepgram = createClient(this.options!.apiKey)
         if(!this.deepgram) throw new Error('No Deepgram client was established')
 
         Sentry.captureMessage(`Deepgram-Service: Establishing Connection`, 'info')
