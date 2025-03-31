@@ -13,12 +13,6 @@ class LLMServiceClass extends EventEmitter {
     private constructor() {
         super()
 
-        this.openAI = new OpenAI(
-            {
-                apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-                dangerouslyAllowBrowser: true
-            })
-
         EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
             // get the chat completion for the utterance
             this.completion(utterance)
@@ -35,21 +29,15 @@ class LLMServiceClass extends EventEmitter {
 
     private completion = async (utterance: string) => {
         if(!utterance) return
-        
-        const completion = await this.openAI?.chat.completions.create({
-            messages: [
-                {
-                    role: 'system', content: Config.useCase.prompt
-                },
-                {
-                    role: 'user', content: utterance
-                }
-            ],
-            model: 'gpt-4o',
+
+        const response = await fetch('/api/llm-get-chat-completion', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json'},
+            body: JSON.stringify({ utterance }),
         })
 
-        if(!completion) throw new Error('no completion was created')
-        EventService.emit(AvatarEvents.AVATAR_SAY, completion.choices[0].message.content)
+        const data = await response.json()
+        EventService.emit(AvatarEvents.AVATAR_SAY, data.item)
     }
 
 }
