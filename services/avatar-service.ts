@@ -131,31 +131,24 @@ class AvatarServiceClass extends EventEmitter {
     }
 
     public closeSession = async (id: string) => {
-        const url = 'https://api.heygen.com/v1/streaming.stop'
-        const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY
-
-        if(!apiKey){
-            Sentry.captureMessage(`Avatar-Service: HEYGEN API KEY is not defined`, 'error')
-            return null
-        }
+ 
 
         try{
-            const response = await fetch(url, {
-                method: 'POST', 
+        
+            const response = await fetch('/api/avatar-close-session', {
+                method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
-                    'Content-Type':'application/json',
-                    'x-api-key': apiKey
+                    'Content-Type':'application/json'
                 },
-                body: JSON.stringify({ session_id: id})
+                body: JSON.stringify({
+                    id: id
+                })
             })
 
-            if(!response.ok){
-                throw new Error(`${response.status}`)
-            }
+            const data = await response.json()   
 
-            const data = await response.json()
-            Sentry.captureMessage(`Avatar-Service: Capturing close session data ${data}`, 'info')
+            console.log(`GOT DATA ${data}`)
+
             return data
 
         }catch(e){Sentry.captureMessage(`Avatar-Service: Stop Streaming Error ${e}`, 'error')}
