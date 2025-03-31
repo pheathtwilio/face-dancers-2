@@ -120,40 +120,12 @@ class AvatarServiceClass extends EventEmitter {
     }
 
     public getSessions = async () => {
-        const url = 'https://api.heygen.com/v1/streaming.list'
-        const apiKey = process.env.NEXT_PUBLIC_HEYGEN_API_KEY
-
-        if(!apiKey){
-            Sentry.captureMessage(`Avatar-Service: HEYGEN_API_KEY is not defined`, 'error')
-            return null
-        }
-
+   
         try{
-            const response = await fetch(url, {
-                method: 'GET', 
-                headers: {
-                    'Accept': 'application/json',
-                    'x-api-key': apiKey
-                }
-            })
 
-            if(!response.ok){
-                throw new Error(`${response.status}`)
-            }
-
-            const sessionObject = await response.json()
-
-            let data: object[] = []
-            if(!sessionObject.data)
-                throw new Error('No data on Sessions Object')
-
-            if(sessionObject.data.sessions.length > 0){
-                for(let i=0; i < sessionObject.data.sessions.length; i++){
-                    data.push(sessionObject.data.sessions[i])
-                }
-            }
-
-            EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (data))
+            const response = await fetch('/api/avatar-get-sessions')
+            const data = await response.json()
+            EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (data.item))
 
         }catch(e){Sentry.captureMessage(`Avatar-Service: Error Creating Session ${e}`, 'error')}
     }
