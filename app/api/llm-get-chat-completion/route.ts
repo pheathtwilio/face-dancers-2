@@ -14,13 +14,16 @@ export async function POST(req: Request){
 
     try{
 
-        const { messages } = await req.json()
-        if(!messages) throw new Error(`No utterance provided to LLM`)
+        const { utterance } = await req.json()
+
+        console.log(`MESSAGES ${utterance}`)
+
+        if(!utterance) throw new Error(`No utterance provided to LLM`)
 
         const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
 
         const completion = await openai!.chat.completions.create({
-            messages: [...baseMessages, { role: 'user', content: messages }],
+            messages: [...baseMessages, { role: 'user', content: utterance }],
             model: 'gpt-3.5-turbo-1106',
         })
    
@@ -32,3 +35,5 @@ export async function POST(req: Request){
     }
 
 }
+
+export const config = { runtime: 'edge' }

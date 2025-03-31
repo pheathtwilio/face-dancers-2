@@ -32,7 +32,10 @@ class LLMServiceClass extends EventEmitter {
 
         const response = await fetch('/api/llm-get-chat-completion', {
             method: 'POST',
-            headers: { 'Content-Type':'application/json'},
+            headers: { 
+                'Connection':'keep-alive',
+                'Content-Type':'application/json'
+            },
             body: JSON.stringify({ utterance }),
         })
 
