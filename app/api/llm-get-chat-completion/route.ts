@@ -15,9 +15,6 @@ export async function POST(req: Request){
     try{
 
         const { utterance } = await req.json()
-
-        console.log(`MESSAGES ${utterance}`)
-
         if(!utterance) throw new Error(`No utterance provided to LLM`)
 
         const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
