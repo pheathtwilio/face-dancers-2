@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import * as Sentry from '@sentry/nextjs'
 import { Config } from '@/app/config/config'
+import { ChatCompletionMessageParam } from 'openai/resources'
 
 let openAI: OpenAI | null = null
 
@@ -15,6 +16,10 @@ const initialize = () => {
         })
     } 
 }
+
+const baseMessages: ChatCompletionMessageParam[] = [
+    { role: 'system', content: Config.useCase.prompt }
+]
 
 export async function GET(req: Request){
 
@@ -31,15 +36,8 @@ export async function POST(req: Request){
         const { utterance } = body
 
         const completion = await openAI!.chat.completions.create({
-            messages: [
-                {
-                    role: 'system', content: Config.useCase.prompt
-                },
-                {
-                    role: 'user', content: utterance
-                }
-            ],
-            model: 'gpt-4o',
+            messages: [...baseMessages, { role: 'user', content: utterance }],
+            model: 'gpt-3.5-turbo-1106',
         })
    
         return new Response(JSON.stringify({ success: true, item: completion.choices[0].message.content }), {status: 200})
