@@ -163,7 +163,6 @@ Avoid Assumptions: If a guest’s request is unclear, politely ask for more deta
   ]
 }
 
-
 export interface UseCase {
   avatar_id: string,
   avatar_name: string,
@@ -176,13 +175,14 @@ interface UseCases {
   collection: UseCase[]
 }
 
-
 interface Config {
+    llm: string,
     useCase: UseCase
     tools: []
 }
 
 export const Config: Config = {
+  llm: 'groq', // or openai
   useCase: usecases.collection[0],
   tools: []
 }
