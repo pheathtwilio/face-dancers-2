@@ -8,9 +8,10 @@ import StreamingAvatar, {
   } from '@heygen/streaming-avatar'
 import EventService from './event-service'
 import AvatarEvents from '../util/avatar-types'
-import { Config } from '@/app/config/config'
+import { configData, UseCase } from '@/app/config/config'
 
 import * as Sentry from '@sentry/nextjs'
+import ConfigEvents from '@/util/config-types'
 
 class AvatarServiceClass extends EventEmitter {
     private static instance: AvatarServiceClass
@@ -20,6 +21,7 @@ class AvatarServiceClass extends EventEmitter {
     private stream: ((stream: MediaStream) => void) | undefined
     private avatar: StreamingAvatar | null = null
     private token: string = ''
+    private useCase: UseCase = configData.useCase
 
     private isLoadingSession: boolean = false
     private isLoadingRepeat: boolean = false
@@ -46,12 +48,15 @@ class AvatarServiceClass extends EventEmitter {
         })
 
         EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () => {
-            this.handleSpeak(Config.useCase.greeting)
+            console.log(`Sending Welcome Message ${this.useCase.greeting}`)
+            this.handleSpeak(this.useCase.greeting)
         })
 
         EventService.on(AvatarEvents.AVATAR_SAY, (words) => {
             this.handleSpeak(words)
         })
+
+
 
     }
 
@@ -79,6 +84,16 @@ class AvatarServiceClass extends EventEmitter {
         this.isLoadingSession = true
         this.avatar = new StreamingAvatar({token: this.token})
 
+
+        this.useCase = await new Promise<UseCase>((resolve) => {
+
+            EventService.on(ConfigEvents.CONFIG_USECASE_GOT, (useCase: UseCase) => {
+                resolve(useCase)
+            })
+
+            EventService.emit(ConfigEvents.CONFIG_GET_USECASE)
+        })
+
         // Register Events
         this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, async () => {
             await this.endSession()
@@ -105,7 +120,7 @@ class AvatarServiceClass extends EventEmitter {
 
             const response = await this.avatar.createStartAvatar({
                 quality: AvatarQuality.High,
-                avatarName: Config.useCase.avatar_id,
+                avatarName: this.useCase.avatar_id,
                 voice: { rate: 1.5, emotion: VoiceEmotion.EXCITED },
                 language: this.language,
                 disableIdleTimeout: true

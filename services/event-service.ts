@@ -21,6 +21,11 @@ class EventServiceClass {
     this.emitter.on(event, listener)
   }
 
+  // subscribe to one event only
+  public once(event: string, listener: (...args: any[]) => void): void {
+    this.emitter.once(event, listener)
+  }
+
   // Emit an event
   public emit(event: string, ...args: any[]): boolean {
     return this.emitter.emit(event, ...args)

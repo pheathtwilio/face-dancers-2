@@ -155,13 +155,23 @@ interface UseCases {
   collection: UseCase[]
 }
 
+<<<<<<< Updated upstream
 
 interface Config {
+=======
+export interface Config {
+    llm: string,
+>>>>>>> Stashed changes
     useCase: UseCase
     tools: []
 }
 
+<<<<<<< Updated upstream
 export const Config: Config = {
+=======
+export const configData: Config = {
+  llm: 'groq', // or openai
+>>>>>>> Stashed changes
   useCase: usecases.collection[0],
   tools: []
 }

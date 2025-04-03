@@ -2,7 +2,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button, Card, Container, Col, Row, Dropdown, Form } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
-import { Config, usecases } from '@/app/config/config' // Adjust the import path
+import { usecases } from '@/app/config/config' // Adjust the import path
+import ConfigEvents from '@/util/config-types'
+import EventService from '@/services/event-service'
 
 const Interstitial: React.FC = () => {
     const router = useRouter()
@@ -24,6 +26,7 @@ const Interstitial: React.FC = () => {
     }, [searchParams])
 
     const handleSelectUseCase = (index: number) => {
+        EventService.emit(ConfigEvents.CONFIG_SET_USECASE, (usecases.collection[index]))
         setSelectedUseCase(usecases.collection[index])
     }
 
@@ -32,7 +35,7 @@ const Interstitial: React.FC = () => {
     }
 
     const handleEnter = () => {
-        Config.useCase = selectedUseCase
+        EventService.emit(ConfigEvents.CONFIG_SET_USECASE, (selectedUseCase))
         router.push(`/waiting-room?username=${userName}`)
     }
 
