@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import SessionTypes from '@/util/session-types'
+import ConfigService from '@/services/config-service'
 
 interface SessionCheckerWrapperProps{
     children: React.ReactNode
@@ -14,6 +15,7 @@ export default function SessionCheckWrapper({children}: SessionCheckerWrapperPro
     const router = useRouter()
     const [userName, setUserName] = useState<string>('')
     const searchParams = useRef<URLSearchParams | null>(null)
+    const configServiceRef = useRef<typeof ConfigService | null>(null)
 
     useEffect(() => {
 
@@ -55,6 +57,10 @@ export default function SessionCheckWrapper({children}: SessionCheckerWrapperPro
         }
     
       }, [searchParams])
+
+    useEffect(() => {
+        configServiceRef.current = ConfigService 
+    }, [])
 
     return <>{children}</>
 
