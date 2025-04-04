@@ -22,6 +22,7 @@ const COUNTRIES: CountryData[] = [
   { code: '+33', name: 'France', flag: '🇫🇷', digitLength: 9 },
   { code: '+49', name: 'Germany', flag: '🇩🇪', digitLength: 11 },
   { code: '+91', name: 'India', flag: '🇮🇳', digitLength: 10 },
+  { code: '+353', name: 'Ireland', flag: '🇮🇪', digitLength: 9 },
   { code: '+81', name: 'Japan', flag: '🇯🇵', digitLength: 10 },
   { code: '+39', name: 'Italy', flag: '🇮🇹', digitLength: 10 },
   { code: '+52', name: 'Mexico', flag: '🇲🇽', digitLength: 10 },
