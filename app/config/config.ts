@@ -162,7 +162,7 @@ export interface Config {
 }
 
 export const configData: Config = {
-  llm: 'groq', // or openai
+  llm: 'openai', // or groq
   useCase: usecases.collection[0],
   tools: []
 }
