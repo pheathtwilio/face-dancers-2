@@ -48,7 +48,6 @@ class AvatarServiceClass extends EventEmitter {
         })
 
         EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () => {
-            console.log(`Sending Welcome Message ${this.useCase.greeting}`)
             this.handleSpeak(this.useCase.greeting)
         })
 
@@ -161,9 +160,6 @@ class AvatarServiceClass extends EventEmitter {
             })
 
             const data = await response.json()   
-
-            console.log(`GOT DATA ${data}`)
-
             return data
 
         }catch(e){Sentry.captureMessage(`Avatar-Service: Stop Streaming Error ${e}`, 'error')}

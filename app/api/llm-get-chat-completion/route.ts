@@ -12,28 +12,6 @@ export async function POST(req: Request){
 
     try{
 
-        console.log(`GET CHAT COMPLETION`)
-
-        // const useCase = await new Promise<UseCase>((resolve) => {
-        //     EventService.once(ConfigEvents.CONFIG_USECASE_GOT, (useCase: UseCase) => {
-
-        //         console.log(`USECASE GOT`)
-        //         resolve(useCase)
-        //     })
-
-        //     EventService.emit(ConfigEvents.CONFIG_GET_USECASE)
-        // })
-
-        // const llm = await new Promise<String>((resolve) => {
-        //     EventService.once(ConfigEvents.CONFIG_LLM_GOT, (llm: string) => {
-        //         resolve(llm)
-        //     })
-
-        //     EventService.emit(ConfigEvents.CONFIG_GET_LLM)
-        // })
-
-        // console.log(`LLM is ${llm}`)
-
         const { utterance, useCase } = await req.json()
         if(!utterance) throw new Error(`No utterance provided to LLM`)
 
@@ -61,7 +39,6 @@ export async function POST(req: Request){
         return new Response(JSON.stringify({ success: true, item: completion.choices[0].message.content }), {status: 200})
 
     } catch (e) {
-        console.log(`ERROR ${e}`)
       return new Response(JSON.stringify({ success: false, message: e }), {status: 500})
     }
 
