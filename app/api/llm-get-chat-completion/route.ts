@@ -1,12 +1,9 @@
 import OpenAI from 'openai'
 import { configData, UseCase } from '@/app/config/config'
 import { ChatCompletionMessageParam } from 'openai/resources'
-<<<<<<< Updated upstream
-=======
 import Groq from 'groq-sdk'
 import EventService from '@/services/event-service'
 import ConfigEvents from '@/util/config-types'
->>>>>>> Stashed changes
 
 
 export async function GET(req: Request){
@@ -42,13 +39,6 @@ export async function POST(req: Request){
         const { utterance, useCase } = await req.json()
         if(!utterance) throw new Error(`No utterance provided to LLM`)
 
-<<<<<<< Updated upstream
-        const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
-
-        const completion = await openai!.chat.completions.create({
-            messages: [...baseMessages, { role: 'user', content: utterance }],
-            model: 'gpt-3.5-turbo-1106',
-=======
         if(configData.llm === 'openai'){
 
             
@@ -68,7 +58,6 @@ export async function POST(req: Request){
         const completion = await groq!.chat.completions.create({
             messages: [ { role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
             model: 'llama3-8b-8192',
->>>>>>> Stashed changes
         })
    
         return new Response(JSON.stringify({ success: true, item: completion.choices[0].message.content }), {status: 200})
