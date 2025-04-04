@@ -2,8 +2,6 @@ import OpenAI from 'openai'
 import { configData, UseCase } from '@/app/config/config'
 import { ChatCompletionMessageParam } from 'openai/resources'
 import Groq from 'groq-sdk'
-import EventService from '@/services/event-service'
-import ConfigEvents from '@/util/config-types'
 
 
 export async function GET(req: Request){
@@ -59,7 +57,7 @@ export async function POST(req: Request){
             messages: [ { role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
             model: 'llama3-8b-8192',
         })
-   
+    
         return new Response(JSON.stringify({ success: true, item: completion.choices[0].message.content }), {status: 200})
 
     } catch (e) {

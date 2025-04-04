@@ -142,7 +142,6 @@ Avoid Assumptions: If a guest’s request is unclear, politely ask for more deta
   ]
 }
 
-
 export interface UseCase {
   avatar_id: string,
   avatar_name: string,
