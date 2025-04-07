@@ -90,7 +90,6 @@ const WaitingRoom: React.FC = () => {
       setUserName(searchParams.current.get('username') || '')
       selectedAudioDeviceRef.current = searchParams.current.get('microphone') || ''
       if(selectedAudioDeviceRef.current !== ''){
-        console.log(`emitting attach audio track`)
         attachTrack(selectedAudioDeviceRef.current)
       }
       selectedVideoDeviceRef.current = searchParams.current.get('video') || ''
