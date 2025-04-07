@@ -14,6 +14,8 @@ const VideoRoom: React.FC = () => {
   const remoteVideoRef = useRef<HTMLDivElement | null>(null)
 
   const [userName, setUserName] = useState<string>('')
+  const selectedAudioDeviceRef = useRef<string | ''>('')
+  const selectedVideoDeviceRef = useRef<string | ''>('')
   const searchParams = useRef<URLSearchParams | null>(null)
 
   const router = useRouter()
@@ -52,15 +54,16 @@ const VideoRoom: React.FC = () => {
     }
   
     if(searchParams.current){
-      const name = searchParams.current.get('username') || ''
-      setUserName(name)
+      setUserName(searchParams.current.get('username') || '')
+      selectedAudioDeviceRef.current = searchParams.current.get('microphone') || ''
+      selectedVideoDeviceRef.current = searchParams.current.get('video') || ''
     }
 
   }, [searchParams])
 
 
   const endSession = async () => {
-      router.push(`/goodbye?username=${userName}`)
+    router.push(`/goodbye?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`)
   }
    
     return (

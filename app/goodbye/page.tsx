@@ -8,6 +8,8 @@ export default function GoodbyePage() {
   
   const router = useRouter()
   const [userName, setUserName] = useState<string>('')
+  const selectedAudioDeviceRef = useRef<string | ''>('')
+  const selectedVideoDeviceRef = useRef<string | ''>('')
   const searchParams = useRef<URLSearchParams | null>(null)
 
   useEffect(() => {
@@ -17,14 +19,15 @@ export default function GoodbyePage() {
     }
   
     if(searchParams.current){
-      const name = searchParams.current.get('username') || ''
-      setUserName(name)
+      setUserName(searchParams.current.get('username') || '')
+      selectedAudioDeviceRef.current = searchParams.current.get('microphone') || ''
+      selectedVideoDeviceRef.current = searchParams.current.get('video') || ''
     }
 
   }, [searchParams])
 
   const handleReturn = () => {
-    router.push(`/interstitial/?username=${userName}`) // Adjust the path as needed
+    router.push(`/interstitial/?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`) 
   }
 
   return (

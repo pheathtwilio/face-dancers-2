@@ -10,6 +10,8 @@ const Interstitial: React.FC = () => {
     const router = useRouter()
     const [selectedUseCase, setSelectedUseCase] = useState(usecases.collection[0])
     const [userName, setUserName] = useState<string>('')
+    const selectedAudioDeviceRef = useRef<string | ''>('')
+    const selectedVideoDeviceRef = useRef<string | ''>('')
     const searchParams = useRef<URLSearchParams | null>(null)
 
     useEffect(() => {
@@ -19,8 +21,9 @@ const Interstitial: React.FC = () => {
       }
     
       if(searchParams.current){
-        const name = searchParams.current.get('username') || ''
-        setUserName(name)
+        setUserName(searchParams.current.get('username') || '')
+        selectedAudioDeviceRef.current = searchParams.current.get('microphone') || ''
+        selectedVideoDeviceRef.current = searchParams.current.get('video') || ''
       }
 
     }, [searchParams])
@@ -36,7 +39,7 @@ const Interstitial: React.FC = () => {
 
     const handleEnter = () => {
         EventService.emit(ConfigEvents.CONFIG_SET_USECASE, (selectedUseCase))
-        router.push(`/waiting-room?username=${userName}`)
+        router.push(`/waiting-room?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`)
     }
 
     return (

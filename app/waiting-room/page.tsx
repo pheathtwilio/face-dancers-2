@@ -26,13 +26,14 @@ const WaitingRoom: React.FC = () => {
   const sttServiceRef = useRef<typeof STTService | null>(null)
 
   const selectedAudioDeviceRef = useRef<string | ''>('')
+  const selectedVideoDeviceRef = useRef<string | ''>('')
 
   const [participants, setParticipants] = useState<number>(0)
   const [participantName, setParticipantName] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
-  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
+  // const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true) 
   const [audioAccessGranted, setAudioAccessGranted] = useState(false)
   const [videoAccessGranted, setVideoAccessGranted] = useState(false)
@@ -86,8 +87,17 @@ const WaitingRoom: React.FC = () => {
 
   useEffect(() => {
     if (searchParams.current) {
-      const name = searchParams.current.get('username') || ''
-      setUserName(name)
+      setUserName(searchParams.current.get('username') || '')
+      selectedAudioDeviceRef.current = searchParams.current.get('microphone') || ''
+      if(selectedAudioDeviceRef.current !== ''){
+        console.log(`emitting attach audio track`)
+        attachTrack(selectedAudioDeviceRef.current)
+      }
+      selectedVideoDeviceRef.current = searchParams.current.get('video') || ''
+    }
+
+    return () => {
+      EventService.off(STTEvents.STT_ATTACH_AUDIO_TRACK, attachTrack)
     }
   }, [searchParams])
 
@@ -133,12 +143,16 @@ const WaitingRoom: React.FC = () => {
 
   const changeAudioDevice = (deviceId: string) => {
     selectedAudioDeviceRef.current = deviceId
+    attachTrack(deviceId)
+  }
+
+  const attachTrack = (deviceId: string) => {
     EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDeviceRef.current)
   }
 
   const joinRoom = async () => {
-    EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDevice)
-    router.push(`/video-room?username=${userName}`)
+    EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDeviceRef.current)
+    router.push(`/video-room?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`)
   }
 
   const endSession = async () => {
@@ -147,7 +161,7 @@ const WaitingRoom: React.FC = () => {
     EventService.emit(VideoEvents.VIDEO_END_SESSION)
     EventService.emit(STTEvents.STT_END_SESSION)
     EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
-    router.push(`/goodbye?username=${userName}`)
+    router.push(`/goodbye?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`)
   }
 
   return (
@@ -243,8 +257,8 @@ const WaitingRoom: React.FC = () => {
                   <Form.Group className='mb-3'>
                     <Form.Label className="fw-semibold">Video Device</Form.Label>
                     <Form.Select
-                      value={selectedVideoDevice}
-                      onChange={(e) => setSelectedVideoDevice(e.target.value)}
+                      value={selectedVideoDeviceRef.current}
+                      onChange={(e) => selectedVideoDeviceRef.current = e.target.value}
                     >
                       <option value="">Select Video Device</option>
                       {videoDevices.map((device) => (
@@ -259,7 +273,7 @@ const WaitingRoom: React.FC = () => {
                     variant="dark"
                     onClick={joinRoom}
                     className="w-100 btn-lg"
-                    disabled={!userName || !selectedAudioDeviceRef.current || !selectedVideoDevice || participants < 1}
+                    disabled={!userName || !selectedAudioDeviceRef.current || !selectedVideoDeviceRef.current || participants < 1}
                   >
                     Join Room
                   </Button>
