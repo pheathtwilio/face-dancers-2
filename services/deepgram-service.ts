@@ -20,6 +20,8 @@ class DeepgramServiceClass extends EventEmitter {
     private static instance: DeepgramServiceClass
     private deepgram: DeepgramClient | null = null
     private connection: ListenLiveClient | undefined = undefined
+    private readonly KEEP_ALIVE_INTERVAL = 10000
+    private keepAliveInterval: NodeJS.Timeout | null = null
     private options: DeepgramSTTOptions | null = {
         apiKey: '',
         config: {
@@ -51,6 +53,28 @@ class DeepgramServiceClass extends EventEmitter {
         return DeepgramServiceClass.instance
     }
 
+    
+
+    private startKeepAlive = () => {
+        if (this.keepAliveInterval) return // already running
+        this.keepAliveInterval = setInterval(() => {
+            try {
+                if (this.connection && this.connection.getReadyState() === 1) {
+                    this.connection.send(JSON.stringify({ type: 'ping' }))
+                }
+            } catch (err) {
+                Sentry.captureMessage(`Deepgram-Service: Keep-alive send error - ${err}`, 'error')
+            }
+        }, this.KEEP_ALIVE_INTERVAL)
+    }
+
+    private stopKeepAlive = () => {
+        if (this.keepAliveInterval) {
+            clearInterval(this.keepAliveInterval)
+            this.keepAliveInterval = null
+        }
+    }
+
     private sendVoiceData = (data: any) => {
         this.connection?.send(data)
     }
@@ -74,10 +98,9 @@ class DeepgramServiceClass extends EventEmitter {
         Sentry.captureMessage(`Deepgram-Service: Connection State ${this.connection?.getReadyState()}`, 'info')
 
         this.connection?.on(LiveTranscriptionEvents.Open, () => {
-
             EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
             EventService.on(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
-
+            this.startKeepAlive()
         })
 
         let is_finals: string[] = []
@@ -105,10 +128,14 @@ class DeepgramServiceClass extends EventEmitter {
             }
         })
 
-        this.connection?.on(LiveTranscriptionEvents.Close, () => {this.connection?.disconnect()})
+        this.connection?.on(LiveTranscriptionEvents.Close, () => {
+            this.stopKeepAlive()
+            this.connection?.disconnect()
+        })
         this.connection?.on(LiveTranscriptionEvents.Error, (e) => {
 
             Sentry.captureMessage(`Deepgram-Service: Transcription Event Error ${e}`, 'error')
+            this.stopKeepAlive()
             try{
                 this.connection?.removeAllListeners()
                 this.connection?.disconnect()
@@ -123,6 +150,7 @@ class DeepgramServiceClass extends EventEmitter {
     }
 
     private endSession = async () => {
+        this.stopKeepAlive()
         await this.connection?.requestClose()
         this.deepgram = null
         EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
