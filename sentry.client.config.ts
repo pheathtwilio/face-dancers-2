@@ -6,9 +6,7 @@ import * as Sentry from "@sentry/nextjs"
 
 const isEnabled = (process.env.DEBUG_ENABLED === 'true')
 const isDevelopment = (process.env.NODE_ENV === 'development')
-const dsnValue = `${process.env.SENTRY_DSN}`
 
-console.log(`DSN VALUE ${dsnValue}`)
 
 const beforeSendReturnType = async (
   event: Sentry.ErrorEvent,
