@@ -42,6 +42,8 @@ class STTServiceClass extends EventEmitter {
     private setStreamByAudioDeviceId = async (audioDeviceId: string) => {
 
         let audioContext = new window.AudioContext 
+        Sentry.captureMessage(`Audio Context state ${audioContext.state}`)
+        
         if(audioContext.state === 'suspended' || audioContext.state === 'closed'){
             await audioContext.resume()
             Sentry.captureMessage(`STT-Service: Audio Context Resumed}`, 'info')
@@ -60,6 +62,8 @@ class STTServiceClass extends EventEmitter {
         this.mediaRecorder = new MediaRecorder(this.stream)
 
         this.mediaRecorder.start(500)
+
+        Sentry.captureMessage(`STT-Service: Media Recorder State ${this.mediaRecorder.state}`)
 
         this.mediaRecorder.ondataavailable = (event) => {
             EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
