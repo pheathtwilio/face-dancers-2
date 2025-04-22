@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
-import { configData, UseCase } from '@/app/config/config'
-import { ChatCompletionMessageParam } from 'openai/resources'
+import { configData } from '@/app/config/config'
 import Groq from 'groq-sdk'
+import llmTypes from '@/util/llm-types'
 
 
 export async function GET(req: Request){
@@ -15,28 +15,46 @@ export async function POST(req: Request){
         const { utterance, useCase } = await req.json()
         if(!utterance) throw new Error(`No utterance provided to LLM`)
 
-        if(configData.llm === 'openai'){
+        let stream: any = null
+        let openai: OpenAI
+        let groq: Groq
 
-            
-
-            const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
-
-            const completion = await openai!.chat.completions.create({
-                messages: [{ role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
-                model: 'gpt-3.5-turbo-1106',
-            })
-
-            return new Response(JSON.stringify({ success: true, item: completion.choices[0].message.content }), {status: 200})
+        switch(configData.llm){
+            case llmTypes.OPENAI:
+                openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
+                stream = await openai!.chat.completions.create({
+                    messages: [{ role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
+                    model: 'gpt-3.5-turbo-1106',
+                    stream: true
+                })
+                break
+            case llmTypes.GROQ:
+                groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+                stream = await groq!.chat.completions.create({
+                    messages: [ { role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
+                    model: 'llama3-8b-8192',
+                    stream: true
+                })
+                break
+            default:
+                openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
+                stream = await openai!.chat.completions.create({
+                    messages: [{ role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
+                    model: 'gpt-3.5-turbo-1106',
+                    stream: true
+                })
+                break
         }
 
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+        const completion: string[] = []
 
-        const completion = await groq!.chat.completions.create({
-            messages: [ { role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
-            model: 'llama3-8b-8192',
-        })
-    
-        return new Response(JSON.stringify({ success: true, item: completion.choices[0].message.content }), {status: 200})
+        for await (const chunk of stream){
+            const content = chunk.choices[0]?.delta?.content || ''
+            completion.push(content)
+        }
+
+        // update conversation context here
+        return new Response(JSON.stringify({ success: true, item: completion.join("") }), {status: 200})
 
     } catch (e) {
       return new Response(JSON.stringify({ success: false, message: e }), {status: 500})
