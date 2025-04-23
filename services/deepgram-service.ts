@@ -5,6 +5,7 @@ import STTEvents from '@/util/stt-types'
 import { createClient, DeepgramClient, ListenLiveClient, LiveTranscriptionEvents } from '@deepgram/sdk'
 
 import * as Sentry from '@sentry/nextjs'
+import AvatarEvents from '@/util/avatar-types'
 
 type DeepgramSTTOptions = {
     apiKey: string
@@ -110,6 +111,9 @@ class DeepgramServiceClass extends EventEmitter {
 
             if(sentence.length == 0) return // ignore empty transcripts
 
+            // when detecting speech tell the avatar to stop talking
+            this.sendInterrupt()
+
             if(data.is_final){
                 //  concatenate the pieces
                 is_finals.push(sentence)
@@ -145,6 +149,10 @@ class DeepgramServiceClass extends EventEmitter {
 
     }
 
+    private sendInterrupt = () => {
+        EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
+    }
+
     private sendUtterance = (utterance: string) => {
         EventService.emit(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, utterance)
     }
@@ -153,6 +161,7 @@ class DeepgramServiceClass extends EventEmitter {
         this.stopKeepAlive()
         await this.connection?.requestClose()
         this.deepgram = null
+        EventService.off(AvatarEvents.AVATAR_STOP_TALKING, this.sendInterrupt)
         EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
         EventService.off(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, this.sendUtterance)
     }

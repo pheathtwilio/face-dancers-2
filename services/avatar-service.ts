@@ -12,6 +12,7 @@ import { configData, UseCase } from '@/app/config/config'
 
 import * as Sentry from '@sentry/nextjs'
 import ConfigEvents from '@/util/config-types'
+import llmTypes from '@/util/llm-types'
 
 class AvatarServiceClass extends EventEmitter {
     private static instance: AvatarServiceClass
@@ -25,6 +26,8 @@ class AvatarServiceClass extends EventEmitter {
 
     private isLoadingSession: boolean = false
     private isLoadingRepeat: boolean = false
+
+    private avatarIsSpeaking: boolean = false
 
     // Private constructor prevents external instantiation
     private constructor() {
@@ -55,7 +58,9 @@ class AvatarServiceClass extends EventEmitter {
             this.handleSpeak(words)
         })
 
-
+        EventService.on(AvatarEvents.AVATAR_STOP_TALKING, () => {
+            this.interrupt()
+        })
 
     }
 
@@ -107,10 +112,12 @@ class AvatarServiceClass extends EventEmitter {
         this.avatar.on(StreamingEvents.USER_START, (e) => {})
         this.avatar.on(StreamingEvents.USER_STOP, (e) => {})
         this.avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+            this.avatarIsSpeaking = true
             Sentry.captureMessage('Avatar-Service: Avatar started talking', 'info')
             EventService.emit(AvatarEvents.AVATAR_START_TALKING)
         })
         this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+            this.avatarIsSpeaking = false
             Sentry.captureMessage('Avatar-Service: Avatar stopped talking', 'info')
             EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
         })
@@ -175,6 +182,14 @@ class AvatarServiceClass extends EventEmitter {
             }catch(e){Sentry.captureMessage(`Avatar-Service: Session End Error ${e}`, 'error')}    
     }
 
+    private interrupt = async () => {
+        if(this.avatarIsSpeaking){
+            // an interrupt is happening notify the LLM to save the current context
+            EventService.emit(llmTypes.LLM_INTERRUPT)
+        }
+        this.avatar?.interrupt().catch((e) => Sentry.captureMessage(`Avatar-Service: Interrupt - ${e.message}`, 'info'))
+    }
+
     public handleSpeak = async (text: string) => {
 
         if (!this.avatar) {
@@ -182,8 +197,10 @@ class AvatarServiceClass extends EventEmitter {
             return
         }
 
+        
+
         // Interrupt if speaking
-        await this.avatar.interrupt().catch((e) => Sentry.captureMessage(`Avatar-Service: Interrupt - ${e.message}`, 'info'))
+        // await this.avatar.interrupt().catch((e) => Sentry.captureMessage(`Avatar-Service: Interrupt - ${e.message}`, 'info'))
         await this.avatar.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => Sentry.captureMessage(`Avatar-Service: Speaking - ${e.message}`, 'info'))
 
     }

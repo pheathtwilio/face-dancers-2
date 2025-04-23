@@ -6,6 +6,8 @@ import OpenAI from 'openai'
 import { configData } from '@/app/config/config'
 import type { UseCase } from '@/app/config/config'
 import ConfigEvents from '@/util/config-types'
+import llmTypes from '@/util/llm-types'
+import * as Sentry from '@sentry/nextjs'
 
 class LLMServiceClass extends EventEmitter {
 
@@ -23,6 +25,10 @@ class LLMServiceClass extends EventEmitter {
         EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
             // get the chat completion for the utterance
             this.completion(utterance)
+        })
+
+        EventService.on(llmTypes.LLM_INTERRUPT, () => {
+            Sentry.captureMessage(`LLM-SERVICE: INTERRUPT`)
         })
     }
 
