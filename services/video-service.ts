@@ -10,26 +10,57 @@ class VideoServiceClass extends EventEmitter {
 
     private static instance: VideoServiceClass
 
-    private roomName: string = 'face-dancers' // want this room name to be the same all the time
+    private adjectives = [
+        'fremen', 'spicey', 'desert', 'ancient', 'mystic', 'blue-eyed', 'ornithopter',
+        'sandblasted', 'shrouded', 'windworn', 'reverend', 'prescient', 'dry',
+        'sleepless', 'dusty', 'stillsuited', 'ceremonial', 'sublime', 'pious',
+        'gilded', 'sardaukar', 'sacred', 'hollow', 'burning', 'prophetic', 'noble',
+        'invisible', 'wormsign', 'sunburned', 'silent', 'fated', 'grim', 'heirborn',
+        'smugglers', 'cryptic', 'loyal', 'visionary', 'rigid', 'arid', 'ritual',
+        'zealous', 'ironclad', 'cloaked', 'sand-washed', 'truthbound', 'imperial',
+        'dune-born', 'oathbound', 'hawkish', 'echoing'
+    ]
+
+    private nouns = [
+        'muadib', 'worm', 'shaihulud', 'arrakis', 'fedaykin', 'spice', 'maker',
+        'thopter', 'choam', 'lisan', 'atreides', 'harkonnen', 'sietch', 'sardaukar',
+        'benegesserit', 'mentat', 'ecologist', 'kanly', 'stilgar', 'chani',
+        'prophecy', 'duke', 'reverendmother', 'truthsayer', 'guild', 'shield',
+        'sietchtabr', 'desertpower', 'melange', 'crysknife', 'banneret', 'council',
+        'padishah', 'guildship', 'emperor', 'sandtrout', 'lasgun', 'warrior',
+        'navigator', 'preacher', 'concubine', 'ducalring', 'thumper', 'harvester',
+        'coriolis', 'spacer', 'jihad', 'omnius', 'face-dancer', 'no-ship',
+        'suspensor', 'hajra', 'imperium', 'chakobsa', 'tleilaxu', 'sayyadina',
+        'dreamer', 'truth', 'seeker'
+    ]
+      
+    private roomName: string | null = null
     private room: TwilioVideoRoom | null = null
-
     private videoRoom: Room | null = null
-
     private container: HTMLDivElement | null = null
-
-    private roomPrefs: RoomPreferences = {
-        UniqueName: this.roomName,
-        EmptyRoomTimeout: '5', // 5 minutes
-        recordParticipantsOnConnect: true,
-        maxParticipants: 2
-    }
+    private roomPrefs: RoomPreferences | null = null
 
     private constructor() {
         super()
 
         // register listeners
         EventService.on(AvatarEvents.AVATAR_STARTED_SESSION, (stream: MediaStream) => {
+
+            // create room
+            this.roomName = this.generateRoomName()
+
+            this.roomPrefs = {
+                UniqueName: this.roomName,
+                EmptyRoomTimeout: '1', // 1 minute
+                recordParticipantsOnConnect: true,
+                maxParticipants: 2
+            }
+
             this.createRoomFromStream('Sofie', this.roomPrefs, stream)
+        })
+
+        EventService.on(VideoEvents.VIDEO_ROOM_DETAILS, () => {
+            EventService.emit(VideoEvents.VIDEO_ROOM_DETAILS_GIVEN, this.roomPrefs)
         })
 
         EventService.on(VideoEvents.VIDEO_END_SESSION, () => {
@@ -73,11 +104,19 @@ class VideoServiceClass extends EventEmitter {
         return VideoServiceClass.instance
     }
 
+    private generateRoomName = () => {
+        const adj = this.adjectives[Math.floor(Math.random() * this.adjectives.length)]
+        const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)] 
+        const randomSuffix = crypto.randomUUID().slice(0, 4)
+        return `${adj}-${noun}-${randomSuffix}`
+    }
+
     private createRoomFromStream = async (
         userName: string,
         roomPrefs: RoomPreferences,
         stream: MediaStream
     ) => {
+
 
         const response = await (fetch('api/twilio-video-create-room', {
             method: 'POST',
@@ -202,6 +241,8 @@ class VideoServiceClass extends EventEmitter {
 
     private endSession = async () => {
 
+        this.roomName = null
+
         if(this.room?.sid){
 
             try{
@@ -222,6 +263,8 @@ class VideoServiceClass extends EventEmitter {
     }
 
     private endRoom = async (roomSid: string) => {
+
+        this.roomName = null
 
         try{
 

@@ -17,6 +17,7 @@ const VideoRoom: React.FC = () => {
   const selectedAudioDeviceRef = useRef<string | ''>('')
   const selectedVideoDeviceRef = useRef<string | ''>('')
   const searchParams = useRef<URLSearchParams | null>(null)
+  const [title, setTitle] = useState<string>('')
 
   const router = useRouter()
 
@@ -34,11 +35,20 @@ const VideoRoom: React.FC = () => {
         }, 100)
       }
 
+      const handleRoomDetailsRequest = (roomPrefs: any) => {
+        const { UniqueName } = roomPrefs
+        setTitle(UniqueName)
+      }
+
+      EventService.on(VideoEvents.VIDEO_ROOM_DETAILS_GIVEN, handleRoomDetailsRequest)
+      EventService.emit(VideoEvents.VIDEO_ROOM_DETAILS)
+
       EventService.on(VideoEvents.VIDEO_HTML_REQUESTED, handleVideoHTMLRequested)
       EventService.emit(VideoEvents.VIDEO_REQUEST_HTML)
 
       return () => {
         EventService.off(VideoEvents.VIDEO_HTML_REQUESTED, handleVideoHTMLRequested)
+        EventService.off(VideoEvents.VIDEO_ROOM_DETAILS_GIVEN, handleRoomDetailsRequest)
         EventService.emit(AvatarEvents.AVATAR_END_SESSION)
         EventService.emit(VideoEvents.VIDEO_END_SESSION)
         EventService.emit(STTEvents.STT_END_SESSION)
@@ -72,7 +82,7 @@ const VideoRoom: React.FC = () => {
           <Col md={8} lg={6}>
             <Card className="p-4 shadow-sm border-0">
               <Card.Body>
-                <h1 className="text-center fw-bold mb-4">Avatar Video Room</h1>
+                <h1 className="text-center fw-bold mb-4">{title}</h1>
                 <div 
                   ref={remoteVideoRef} 
                   className="d-flex align-items-center justify-content-center bg-dark rounded"
