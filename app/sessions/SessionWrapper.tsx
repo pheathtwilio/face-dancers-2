@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import SessionTypes from '@/util/session-types'
 import ConfigService from '@/services/config-service'
+import { logInfo } from '@/services/logger-service'
 
 interface SessionCheckerWrapperProps{
     children: React.ReactNode
@@ -16,6 +17,8 @@ export default function SessionCheckWrapper({children}: SessionCheckerWrapperPro
     const [userName, setUserName] = useState<string>('')
     const searchParams = useRef<URLSearchParams | null>(null)
     const configServiceRef = useRef<typeof ConfigService | null>(null)
+
+    const sessionCheckingDisabled = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOCAL_LOGGING === 'true'
 
     useEffect(() => {
 
@@ -41,7 +44,10 @@ export default function SessionCheckWrapper({children}: SessionCheckerWrapperPro
             }
         }
 
-        checkSession()
+        if(!sessionCheckingDisabled){
+            logInfo(`SessionChecking is Enabled`)
+            checkSession()
+        }
 
     }, [pathname, router])
 
