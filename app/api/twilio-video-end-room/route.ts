@@ -1,10 +1,10 @@
-import * as Sentry from '@sentry/nextjs'
+import { logError } from '@/services/logger-service'
 
 const { TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 
 export async function GET(req: Request){
 
-    Sentry.captureMessage(`API-Twilio-Video-End-Room: GET method not allowed when requesting to end a room`, 'error')
+    logError(`API-Twilio-Video-End-Room: GET method not allowed when requesting to end a room`)
     return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
 
 }
@@ -35,7 +35,7 @@ export async function POST(req: Request){
         return new Response(JSON.stringify({ response: response }), { status: 200 })
 
     } catch (e) {
-        Sentry.captureMessage(`API-Twilio-Video-End-Room: Error generating a room ${e}`, 'error')
+        logError(`API-Twilio-Video-End-Room: Error generating a room ${e}`)
       return new Response(JSON.stringify({ error: 'Failed to generate Video Room' }), { status: 500 })
     }
 

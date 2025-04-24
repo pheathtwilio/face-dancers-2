@@ -2,8 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button, Card, Container, Col, Row, Form, Alert, Spinner, Dropdown } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
-
-import * as Sentry from '@sentry/nextjs'
+import { logError } from '@/services/logger-service'
 
 
 interface CountryData {
@@ -218,7 +217,7 @@ const PhoneVerification: React.FC = () => {
       }
     } catch (e) {
       setError('An error occurred during the verification process.')
-      Sentry.captureMessage(`Verify: Verification Error ${e}`, 'error')
+      logError(`Verify: Verification Error ${e}`)
     } finally {
       setIsLoading(false)
     }
@@ -268,7 +267,7 @@ const PhoneVerification: React.FC = () => {
       }
     } catch (e) {
       setError('An error occurred during the verification process.')
-      Sentry.captureMessage(`Verify: Verification Error ${e}`, 'error')
+      logError(`Verify: Verification Error ${e}`)
     } finally {
       setIsLoading(false)
     }

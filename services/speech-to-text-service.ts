@@ -2,7 +2,7 @@ import STTEvents from '@/util/stt-types'
 import EventService from './event-service'
 import EventEmitter from 'events'
 
-import * as Sentry from '@sentry/nextjs'
+import { logInfo, logError } from '@/services/logger-service'
 
 class STTServiceClass extends EventEmitter {
 
@@ -17,7 +17,7 @@ class STTServiceClass extends EventEmitter {
 
         EventService.on(STTEvents.STT_ATTACH_AUDIO_TRACK, (audioDeviceId) => {
 
-            Sentry.captureMessage(`STT-Service: attaching audio track for ${audioDeviceId}`, 'info')
+            logInfo(`STT-Service: attaching audio track for ${audioDeviceId}`)
             
             if(!audioDeviceId) throw new Error('no audio device id has been passed')
             this.audioDeviceId = audioDeviceId
@@ -42,11 +42,11 @@ class STTServiceClass extends EventEmitter {
     private setStreamByAudioDeviceId = async (audioDeviceId: string) => {
 
         let audioContext = new window.AudioContext 
-        Sentry.captureMessage(`Audio Context state ${audioContext.state}`)
+        logInfo(`Audio Context state ${audioContext.state}`)
         
         if(audioContext.state === 'suspended' || audioContext.state === 'closed'){
             await audioContext.resume()
-            Sentry.captureMessage(`STT-Service: Audio Context Resumed}`, 'info')
+            logInfo(`STT-Service: Audio Context Resumed}`)
         }
 
         const constraints = {
@@ -63,7 +63,7 @@ class STTServiceClass extends EventEmitter {
 
         this.mediaRecorder.start(500)
 
-        Sentry.captureMessage(`STT-Service: Media Recorder State ${this.mediaRecorder.state}`)
+        logInfo(`STT-Service: Media Recorder State ${this.mediaRecorder.state}`)
 
         this.mediaRecorder.ondataavailable = (event) => {
             EventService.emit(STTEvents.STT_SEND_SPEECH_DATA, event.data)
@@ -73,7 +73,7 @@ class STTServiceClass extends EventEmitter {
             this.mediaRecorder?.stop()
         }
 
-        this.mediaRecorder.onerror = (e) => {Sentry.captureMessage(`STT-Service: Media Recorder Error ${e}`, 'error')}
+        this.mediaRecorder.onerror = (e) => {logError(`STT-Service: Media Recorder Error ${e}`)}
 
     }
 

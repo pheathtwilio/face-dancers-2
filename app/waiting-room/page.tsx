@@ -14,7 +14,7 @@ import LLMService from '@/services/llm-service'
 import STTService from '@/services/speech-to-text-service'
 import DeepgramEvents from '@/util/deepgram-types'
 
-import * as Sentry from '@sentry/nextjs'
+import { logInfo, logError } from '@/services/logger-service'
 
 const WaitingRoom: React.FC = () => {
   const router = useRouter()
@@ -60,7 +60,7 @@ const WaitingRoom: React.FC = () => {
       llmServiceRef.current = LLMService
       sttServiceRef.current = STTService
     } catch (e) {
-      Sentry.captureMessage(`Waiting-Room: Mounting Error ${e}`, 'error')
+      logError(`Waiting-Room: Mounting Error ${e}`)
     }
 
     if (avatarServiceRef.current) {
@@ -116,14 +116,14 @@ const WaitingRoom: React.FC = () => {
         setVideoAccessGranted(videoStatus.state === "granted")
       }
 
-      Sentry.captureMessage(`AudioAccess: ${audioStatus.state}, VideoAccess: ${videoStatus.state}`, 'info')
+      logInfo(`AudioAccess: ${audioStatus.state}, VideoAccess: ${videoStatus.state}`)
   
       // Show modal if either permission is not granted
       if (audioStatus.state !== "granted" || videoStatus.state !== "granted") {
         setShowPermissionModal(true)
       }
     } catch (e) {
-      Sentry.captureMessage(`Waiting-Room: Check Media Permissions Error ${e}`, 'error')
+      logError(`Waiting-Room: Check Media Permissions Error ${e}`)
     }
   }
   
@@ -136,7 +136,7 @@ const WaitingRoom: React.FC = () => {
       setAudioDevices(devices.filter((device) => device.kind === 'audioinput'))
       setVideoDevices(devices.filter((device) => device.kind === 'videoinput'))
     } catch (e) {
-      Sentry.captureMessage(`Waiting-Room: Error Accessing Media Devices ${e}`, 'error')
+      logError(`Waiting-Room: Error Accessing Media Devices ${e}`)
     }
   }
 
@@ -155,7 +155,7 @@ const WaitingRoom: React.FC = () => {
   }
 
   const endSession = async () => {
-    Sentry.captureMessage('Waiting-Room: Calling End Session')
+    logInfo('Waiting-Room: Calling End Session')
     EventService.emit(AvatarEvents.AVATAR_END_SESSION)
     EventService.emit(VideoEvents.VIDEO_END_SESSION)
     EventService.emit(STTEvents.STT_END_SESSION)

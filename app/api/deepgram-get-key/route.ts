@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs'
+import { logError } from "@/services/logger-service"
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 
@@ -11,7 +11,7 @@ export async function GET(_req: Request){
         return new Response(JSON.stringify({ item: DEEPGRAM_API_KEY }), { status: 200 })
 
     } catch (e) {
-      Sentry.captureMessage(`Deepgram-Get-Key: Error getting Deepgram API Key ${e}`, 'error')
+      logError(`Deepgram-Get-Key: Error getting Deepgram API Key ${e}`)
       return new Response(JSON.stringify({ error: 'Failed to get deepgram API key' }), { status: 500 })
     }
 
@@ -19,7 +19,7 @@ export async function GET(_req: Request){
 
 export async function POST(_req: Request){
 
-    Sentry.captureMessage(`Deepgram-get-key: POST method not allowed`, 'error')
+    logError(`Deepgram-get-key: POST method not allowed`)
     return new Response(JSON.stringify({error: 'POST method not allowed'}), {status: 405})
 
 }

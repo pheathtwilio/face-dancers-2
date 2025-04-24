@@ -1,11 +1,11 @@
 import * as Twilio from 'twilio'
-import * as Sentry from '@sentry/nextjs'
+import { logError } from '@/services/logger-service'
 
 const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 
 export async function GET(req: Request){
 
-  Sentry.captureMessage(`API-Twilio-Video-Token: GET method not allowed when requesting JWT token`, 'error')
+  logError(`API-Twilio-Video-Token: GET method not allowed when requesting JWT token`)
   return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
 
 }
@@ -37,7 +37,7 @@ export async function POST(req: Request){
       return new Response(JSON.stringify({ token: token.toJwt() }), { status: 200 })
 
     } catch (e) {
-      Sentry.captureMessage(`API-Twilio-Video-Token: Error generating token ${e}`, 'error')
+      logError(`API-Twilio-Video-Token: Error generating token ${e}`)
       return new Response(JSON.stringify({ error: 'Failed to generate Twilio token' }), { status: 500 })
     }
 

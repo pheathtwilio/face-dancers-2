@@ -1,11 +1,11 @@
-import * as Sentry from '@sentry/nextjs'
+import { logInfo, logError } from '@/services/logger-service'
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY
 
 
 export async function GET(_req: Request){
 
-    Sentry.captureMessage(`API-Avatar-Close-Sessions: GET method not allowed`, 'error')
+    logError(`API-Avatar-Close-Sessions: GET method not allowed`)
     return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
 
 }
@@ -41,11 +41,11 @@ export async function POST(_req: Request){
         }
 
         const data = await response.json()
-        Sentry.captureMessage(`Avatar-Service: Capturing close session data ${data}`, 'info')
+        logInfo(`Avatar-Service: Capturing close session data ${data}`)
         return new Response(JSON.stringify({ item: data }), { status: 200 })
 
     } catch (e) {
-      Sentry.captureMessage(`API-Avatar-Close-Sessions: Error closing session ${e}`, 'error')
+      logError(`API-Avatar-Close-Sessions: Error closing session ${e}`)
       return new Response(JSON.stringify({ error: 'Failed to close session' }), { status: 500 })
     }
 

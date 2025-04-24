@@ -4,7 +4,7 @@ import { connect, LocalTrackPublication, Room } from 'twilio-video'
 import AvatarEvents from '@/util/avatar-types'
 import EventService from './event-service'
 
-import * as Sentry from '@sentry/nextjs'
+import { logInfo, logError } from '@/services/logger-service'
 
 class VideoServiceClass extends EventEmitter {
 
@@ -68,7 +68,7 @@ class VideoServiceClass extends EventEmitter {
         })
 
         EventService.on(VideoEvents.VIDEO_REQUEST_HTML, () => {
-            Sentry.captureMessage(`Video-Service: ${VideoEvents.VIDEO_REQUEST_HTML}`, 'info')
+            logInfo(`Video-Service: ${VideoEvents.VIDEO_REQUEST_HTML}`)
             let html: HTMLDivElement | null = null
             html = this.getHTMLMediaElements()
             EventService.emit(VideoEvents.VIDEO_HTML_REQUESTED, html)
@@ -143,7 +143,7 @@ class VideoServiceClass extends EventEmitter {
             tracks: tracks
         })
 
-        Sentry.captureMessage(`Video-Service: ${VideoEvents.VIDEO_PARTICIPANT_JOINED}`, 'info')
+        logInfo(`Video-Service: ${VideoEvents.VIDEO_PARTICIPANT_JOINED}`)
         EventService.emit(VideoEvents.VIDEO_PARTICIPANT_JOINED, userName)
 
     }
@@ -158,19 +158,19 @@ class VideoServiceClass extends EventEmitter {
         this.videoRoom.localParticipant.tracks.forEach((publication: LocalTrackPublication) => {
             if (publication.track) {
                 if (publication.track.kind === 'video') {
-                    Sentry.captureMessage(`Video-Service: Video Track Found ${publication.track}`, 'info')
+                    logInfo(`Video-Service: Video Track Found ${publication.track}`)
                     const videoElement = document.createElement('video')
                     videoElement.autoplay = true
                     videoElement.playsInline = true
                     publication.track.attach(videoElement)
                     this.container!.appendChild(videoElement)
                 } else if (publication.track.kind === 'audio') {
-                    Sentry.captureMessage(`Video-Service: Audio Track Found ${publication.track}`, 'info')
+                    logInfo(`Video-Service: Audio Track Found ${publication.track}`)
                     const audioElement = document.createElement('audio')
                     audioElement.autoplay = true
                     publication.track.attach(audioElement)
                     this.container!.appendChild(audioElement)
-                    audioElement.play().catch(e => Sentry.captureMessage(`Video-Service: Video Play Error ${e}`, 'error'))
+                    audioElement.play().catch(e => logError(`Video-Service: Video Play Error ${e}`))
                 }
             }
         })
@@ -206,23 +206,23 @@ class VideoServiceClass extends EventEmitter {
             tracks: tracks
         })
 
-        Sentry.captureMessage(`Video-Service: ${VideoEvents.VIDEO_PARTICIPANT_JOINED}`, 'info')
+        logInfo(`Video-Service: ${VideoEvents.VIDEO_PARTICIPANT_JOINED}`)
     }
 
     private unMuteAudio = () => {
         if(!this.container) throw new Error('cannot unmute audio, html div does not exist')
         
-        Sentry.captureMessage(`Video-Service: Unmuting Video`, 'info')
+        logInfo(`Video-Service: Unmuting Video`)
         const audioElement = this.container.querySelector('audio')
         audioElement!.muted = false
-        audioElement?.play().catch(e => Sentry.captureMessage(`Video-Service: Audio Play Error ${e}`, 'error'))
+        audioElement?.play().catch(e => logError(`Video-Service: Audio Play Error ${e}`))
 
     }
 
     private muteAudio = () => {
         if(!this.container) throw new Error('cannot mute audio, html div does not exist')
 
-        Sentry.captureMessage(`Video-Service: Muting Video`, 'info')
+        logInfo(`Video-Service: Muting Video`)
         const audioElement = this.container.querySelector('audio')
         audioElement!.muted = true
     }
@@ -253,10 +253,10 @@ class VideoServiceClass extends EventEmitter {
                 }))
 
                 const room = await response.json()
-                Sentry.captureMessage(`Video-Service: ${VideoEvents.VIDEO_SESSION_ENDED} for ${this.room.sid}`, 'info')
+                logInfo(`Video-Service: ${VideoEvents.VIDEO_SESSION_ENDED} for ${this.room.sid}`)
                 this.room = null
 
-            }catch(e){Sentry.captureMessage(`Video-Service: End Session Error ${e}`, 'error')}
+            }catch(e){logError(`Video-Service: End Session Error ${e}`)}
            
         }
 
@@ -274,10 +274,10 @@ class VideoServiceClass extends EventEmitter {
             }))
 
             const room = await response.json()
-            Sentry.captureMessage(`Video-Service: ${VideoEvents.VIDEO_SESSION_ENDED} for ${roomSid}`, 'info')
+            logInfo(`Video-Service: ${VideoEvents.VIDEO_SESSION_ENDED} for ${roomSid}`)
 
 
-        }catch(e){Sentry.captureMessage(`Video-Service: End Session Error ${e}`, 'error')}
+        }catch(e){logError(`Video-Service: End Session Error ${e}`)}
 
     }
 

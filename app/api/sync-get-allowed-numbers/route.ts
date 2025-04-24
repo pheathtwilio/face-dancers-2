@@ -1,6 +1,6 @@
 import twilio from 'twilio'
 
-import * as Sentry from '@sentry/nextjs'
+import { logError } from '@/services/logger-service'
 
 const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET } = process.env
 const client = twilio(TWILIO_API_KEY, TWILIO_API_SECRET, {accountSid: TWILIO_ACCOUNT_SID})
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
   
   } catch (e) {
-    Sentry.captureMessage(`API-Sync-Get-Allowed-Numbers: Twilio Sync Error ${e}`, 'error')
+    logError(`API-Sync-Get-Allowed-Numbers: Twilio Sync Error ${e}`)
     return new Response(JSON.stringify({ message: e || 'failed to check sync' }), { status: 500 })
   }
 }

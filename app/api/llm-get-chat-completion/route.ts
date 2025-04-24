@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 import { configData } from '@/app/config/config'
 import Groq from 'groq-sdk'
 import llmTypes from '@/util/llm-types'
-
+import { logInfo, logError } from '@/services/logger-service'
 
 export async function GET(req: Request){
   return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
@@ -53,11 +53,12 @@ export async function POST(req: Request){
             completion.push(content)
         }
 
-        // update conversation context here
+        logInfo(`llm-get-chat-completion: ${completion.join("")}`)
         return new Response(JSON.stringify({ success: true, item: completion.join("") }), {status: 200})
 
     } catch (e) {
-      return new Response(JSON.stringify({ success: false, message: e }), {status: 500})
+        logError(`llm-get-chat-completion: ${e}`)
+        return new Response(JSON.stringify({ success: false, message: e }), {status: 500})
     }
 
 }

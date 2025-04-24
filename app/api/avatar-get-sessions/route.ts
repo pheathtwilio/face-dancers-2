@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs'
+import { logError } from "@/services/logger-service"
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY
 
@@ -39,7 +39,7 @@ export async function GET(_req: Request){
         return new Response(JSON.stringify({ item: data }), { status: 200 })
 
     } catch (e) {
-      Sentry.captureMessage(`API-Avatar-Get-Sessions: Error getting sessions ${e}`, 'error')
+      logError(`API-Avatar-Get-Sessions: Error getting sessions ${e}`)
       return new Response(JSON.stringify({ error: 'Failed to get sessions' }), { status: 500 })
     }
 
@@ -47,7 +47,7 @@ export async function GET(_req: Request){
 
 export async function POST(_req: Request){
 
-    Sentry.captureMessage(`API-Avatar-Get-Sessions: POST method not allowed`, 'error')
+    logError(`API-Avatar-Get-Sessions: POST method not allowed`)
     return new Response(JSON.stringify({error: 'POST method not allowed'}), {status: 405})
 
 }
