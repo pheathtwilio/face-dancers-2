@@ -19,139 +19,155 @@ import { logInfo, logError } from '@/services/logger-service'
 const WaitingRoom: React.FC = () => {
   const router = useRouter()
 
+  // Service refs
   const avatarServiceRef = useRef<typeof AvatarService | null>(null)
   const videoServiceRef = useRef<typeof VideoService | null>(null)
   const deepgramServiceRef = useRef<typeof DeepgramService | null>(null)
   const llmServiceRef = useRef<typeof LLMService | null>(null)
   const sttServiceRef = useRef<typeof STTService | null>(null)
 
-  const selectedAudioDeviceRef = useRef<string | ''>('')
-  const selectedVideoDeviceRef = useRef<string | ''>('')
+  // Audio device: both ref (for sync) and state (for UI)
+  const selectedAudioDeviceRef = useRef<string>('')
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
 
+  // Video device: both ref (for sync) and state (for UI)
+  const selectedVideoDeviceRef = useRef<string>('')
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
+
+  // Other UI state
   const [participants, setParticipants] = useState<number>(0)
   const [participantName, setParticipantName] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
-  // const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(true) 
-  const [audioAccessGranted, setAudioAccessGranted] = useState(false)
-  const [videoAccessGranted, setVideoAccessGranted] = useState(false)
-  const [showPermissionModal, setShowPermissionModal] = useState(false)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [audioAccessGranted, setAudioAccessGranted] = useState<boolean>(false)
+  const [videoAccessGranted, setVideoAccessGranted] = useState<boolean>(false)
+  const [showPermissionModal, setShowPermissionModal] = useState<boolean>(false)
 
-  const searchParams = useRef<URLSearchParams | null>(null)
-  
-
-
-
-
+  // INITIAL MOUNT: services, permissions, devices, participant events
   useEffect(() => {
     const startDeepgram = () => {
       EventService.emit(DeepgramEvents.DEEPGRAM_START_SESSION)
     }
 
     try {
-      avatarServiceRef.current = AvatarService
-      videoServiceRef.current = VideoService
+      avatarServiceRef.current   = AvatarService
+      videoServiceRef.current    = VideoService
       deepgramServiceRef.current = DeepgramService
 
       startDeepgram()
-
       llmServiceRef.current = LLMService
       sttServiceRef.current = STTService
     } catch (e) {
       logError(`Waiting-Room: Mounting Error ${e}`)
     }
 
+    // Initialize avatar
     if (avatarServiceRef.current) {
       EventService.emit(AvatarEvents.AVATAR_INITIALIZE)
     }
 
-    if (typeof window !== 'undefined') {
-      searchParams.current = new URLSearchParams(window.location.search)
-    }
-
+    // Permissions & devices
     checkMediaPermissions()
     fetchDevices()
 
-    EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, (userName) => {
-      setParticipants((prev) => prev + 1)
-      // setParticipantName(userName) 
-      setLoading(false) 
-    })
+    // Listen for someone joining
+    const onJoined = (name: string) => {
+      setParticipants(prev => prev + 1)
+      setParticipantName(name)
+      setLoading(false)
+    }
+    EventService.on(VideoEvents.VIDEO_PARTICIPANT_JOINED, onJoined)
 
     return () => {
       EventService.off(DeepgramEvents.DEEPGRAM_START_SESSION, startDeepgram)
+      EventService.off(VideoEvents.VIDEO_PARTICIPANT_JOINED, onJoined)
     }
   }, [])
 
+  // ONCE: initialize from URL params (no STT listener to avoid loops)
   useEffect(() => {
-    if (searchParams.current) {
-      setUserName(searchParams.current.get('username') || '')
-      selectedAudioDeviceRef.current = searchParams.current.get('microphone') || ''
-      if(selectedAudioDeviceRef.current !== ''){
-        attachTrack(selectedAudioDeviceRef.current)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const mic = params.get('microphone') || ''
+      const cam = params.get('video')      || ''
+      const uname = params.get('username') || ''
+
+      setUserName(uname)
+
+      if (mic) {
+        selectedAudioDeviceRef.current = mic
+        setSelectedAudioDevice(mic)
+        attachTrack(mic)
       }
-      selectedVideoDeviceRef.current = searchParams.current.get('video') || ''
+      if (cam) {
+        selectedVideoDeviceRef.current = cam
+        setSelectedVideoDevice(cam)
+      }
     }
+  }, [])
 
-    return () => {
-      EventService.off(STTEvents.STT_ATTACH_AUDIO_TRACK, attachTrack)
-    }
-  }, [searchParams])
-
+  // PERMISSIONS
   const checkMediaPermissions = async () => {
     try {
-      const audioStatus = await navigator.permissions.query({ name: "microphone" as PermissionName})
-      const videoStatus = await navigator.permissions.query({ name: "camera" as PermissionName})
-  
-      setAudioAccessGranted(audioStatus.state === "granted")
-      setVideoAccessGranted(videoStatus.state === "granted")
-  
-      audioStatus.onchange = () => {
-        setAudioAccessGranted(audioStatus.state === "granted")
-      }
-  
-      videoStatus.onchange = () => {
-        setVideoAccessGranted(videoStatus.state === "granted")
-      }
+      const audioStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+      const videoStatus = await navigator.permissions.query({ name: 'camera' as PermissionName })
+
+      setAudioAccessGranted(audioStatus.state === 'granted')
+      setVideoAccessGranted(videoStatus.state === 'granted')
+
+      audioStatus.onchange = () => setAudioAccessGranted(audioStatus.state === 'granted')
+      videoStatus.onchange = () => setVideoAccessGranted(videoStatus.state === 'granted')
 
       logInfo(`AudioAccess: ${audioStatus.state}, VideoAccess: ${videoStatus.state}`)
-  
-      // Show modal if either permission is not granted
-      if (audioStatus.state !== "granted" || videoStatus.state !== "granted") {
+
+      if (audioStatus.state !== 'granted' || videoStatus.state !== 'granted') {
         setShowPermissionModal(true)
       }
     } catch (e) {
       logError(`Waiting-Room: Check Media Permissions Error ${e}`)
     }
   }
-  
 
+  // FETCH DEVICES
   const fetchDevices = async () => {
-    if (typeof window === 'undefined') return
-
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      setAudioDevices(devices.filter((device) => device.kind === 'audioinput'))
-      setVideoDevices(devices.filter((device) => device.kind === 'videoinput'))
+      setAudioDevices(devices.filter(d => d.kind === 'audioinput'))
+      setVideoDevices(devices.filter(d => d.kind === 'videoinput'))
     } catch (e) {
       logError(`Waiting-Room: Error Accessing Media Devices ${e}`)
     }
   }
 
-  const changeAudioDevice = (deviceId: string) => {
+  // HANDLERS: audio/video changes
+  function handleAudioChange(deviceId: string) {
     selectedAudioDeviceRef.current = deviceId
     attachTrack(deviceId)
+    setSelectedAudioDevice(deviceId)
+  }
+  function handleVideoChange(deviceId: string) {
+    selectedVideoDeviceRef.current = deviceId
+    setSelectedVideoDevice(deviceId)
   }
 
+  // STT attach
   const attachTrack = (deviceId: string) => {
-    EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, selectedAudioDeviceRef.current)
+    EventService.emit(STTEvents.STT_ATTACH_AUDIO_TRACK, deviceId)
   }
 
+  // JOIN / END
   const joinRoom = async () => {
-    EventService.emit(VideoEvents.VIDEO_JOIN_PARTICIPANT, userName, selectedAudioDeviceRef.current, selectedVideoDeviceRef.current)
-    router.push(`/video-room?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`)
+    EventService.emit(
+      VideoEvents.VIDEO_JOIN_PARTICIPANT,
+      userName,
+      selectedAudioDeviceRef.current,
+      selectedVideoDeviceRef.current
+    )
+    router.push(
+      `/video-room?username=${encodeURIComponent(userName)}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`
+    )
   }
 
   const endSession = async () => {
@@ -160,7 +176,9 @@ const WaitingRoom: React.FC = () => {
     EventService.emit(VideoEvents.VIDEO_END_SESSION)
     EventService.emit(STTEvents.STT_END_SESSION)
     EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
-    router.push(`/goodbye?username=${userName}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`)
+    router.push(
+      `/goodbye?username=${encodeURIComponent(userName)}&microphone=${selectedAudioDeviceRef.current}&video=${selectedVideoDeviceRef.current}`
+    )
   }
 
   return (
@@ -170,32 +188,23 @@ const WaitingRoom: React.FC = () => {
           <Col md={8} lg={6}>
             <Card className="p-4 shadow-sm border-0">
               <Card.Body>
-              <h1 className="text-center fw-bold mb-4 d-flex justify-content-center align-items-center gap-2">
-                Waiting Room 
-                {loading && <Spinner animation="border" variant="dark" size="sm" />}
-              </h1>
+                <h1 className="text-center fw-bold mb-4 d-flex justify-content-center align-items-center gap-2">
+                  Waiting Room {loading && <Spinner animation="border" variant="dark" size="sm" />}
+                </h1>
 
                 <Modal
                   show={showPermissionModal}
                   onHide={() => setShowPermissionModal(false)}
                   centered
-                  dialogClassName="custom-modal" 
+                  dialogClassName="custom-modal"
                 >
                   <Modal.Header closeButton>
                     <Modal.Title>Media Permissions Required</Modal.Title>
                   </Modal.Header>
                   <Modal.Body>
                     <p>We need access to your microphone and camera for this meeting.</p>
-                    {!audioAccessGranted && (
-                      <p>
-                        🎤 Microphone access is <strong>not granted</strong>.
-                      </p>
-                    )}
-                    {!videoAccessGranted && (
-                      <p>
-                        📷 Camera access is <strong>not granted</strong>.
-                      </p>
-                    )}
+                    {!audioAccessGranted && <p>🎤 Microphone access is <strong>not granted</strong>.</p>}
+                    {!videoAccessGranted && <p>📷 Camera access is <strong>not granted</strong>.</p>}
                     <p>Please allow permissions in your browser settings and refresh the page.</p>
                   </Modal.Body>
                   <Modal.Footer>
@@ -220,7 +229,8 @@ const WaitingRoom: React.FC = () => {
                 )}
 
                 <Form>
-                  <Form.Group className='mb-3'>
+                  {/* Details */}
+                  <Form.Group className="mb-3">
                     <Form.Label className="fw-semibold">Details</Form.Label>
                     <InputGroup>
                       <InputGroup.Text>Participants</InputGroup.Text>
@@ -228,24 +238,24 @@ const WaitingRoom: React.FC = () => {
                     </InputGroup>
                   </Form.Group>
 
-                  <Form.Group className='mb-3'>
+                  {/* Username */}
+                  <Form.Group className="mb-3">
                     <Form.Label className="fw-semibold">Username</Form.Label>
                     <Form.Control
-                      type="text"
-                      placeholder="Enter your username"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
+                      type="text" placeholder="Enter your username"
+                      value={userName} onChange={e => setUserName(e.target.value)}
                     />
                   </Form.Group>
 
-                  <Form.Group className='mb-3'>
+                  {/* Audio Device */}
+                  <Form.Group className="mb-3">
                     <Form.Label className="fw-semibold">Audio Device</Form.Label>
                     <Form.Select
-                      value={selectedAudioDeviceRef.current}
-                      onChange={(e) => changeAudioDevice(e.target.value)}
+                      value={selectedAudioDevice}
+                      onChange={e => handleAudioChange(e.target.value)}
                     >
                       <option value="">Select Audio Device</option>
-                      {audioDevices.map((device) => (
+                      {audioDevices.map(device => (
                         <option key={device.deviceId} value={device.deviceId}>
                           {device.label || `Microphone ${device.deviceId.substring(0, 6)}`}
                         </option>
@@ -253,33 +263,38 @@ const WaitingRoom: React.FC = () => {
                     </Form.Select>
                   </Form.Group>
 
-                  <Form.Group className='mb-3'>
+                  {/* Video Device */}
+                  <Form.Group className="mb-3">
                     <Form.Label className="fw-semibold">Video Device</Form.Label>
                     <Form.Select
-                      value={selectedVideoDeviceRef.current}
-                      onChange={(e) => selectedVideoDeviceRef.current = e.target.value}
+                      value={selectedVideoDevice}
+                      onChange={e => handleVideoChange(e.target.value)}
                     >
                       <option value="">Select Video Device</option>
-                      {videoDevices.map((device) => (
+                      {videoDevices.map(device => (
                         <option key={device.deviceId} value={device.deviceId}>
-                          {device.label || `Camera ${device.deviceId}`}
+                          {device.label || `Camera ${device.deviceId.substring(0, 6)}`}
                         </option>
                       ))}
                     </Form.Select>
                   </Form.Group>
 
+                  {/* Join & End */}
                   <Button
-                    variant="dark"
-                    onClick={joinRoom}
+                    variant="dark" onClick={joinRoom}
                     className="w-100 btn-lg"
-                    disabled={!userName || !selectedAudioDeviceRef.current || !selectedVideoDeviceRef.current || participants < 1}
+                    disabled={
+                      !userName ||
+                      !selectedAudioDeviceRef.current ||
+                      !selectedVideoDeviceRef.current ||
+                      participants < 1
+                    }
                   >
                     Join Room
                   </Button>
 
                   <Button
-                    variant="secondary"
-                    onClick={endSession}
+                    variant="secondary" onClick={endSession}
                     className="w-100 btn-lg mt-3"
                   >
                     End Session
