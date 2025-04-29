@@ -193,9 +193,14 @@ class EmotionServiceClass extends EventEmitter {
             )
 
             logInfo(`EmotionService: analyzeFrame: EMOTIONS: ${emo.emotions.join(', ')}`)
+            this.broadcastEmotion(emo.emotions.join(', '))
         } catch (e) {
             logError(`EmotionService: analyzeFrame error: ${e}`)
         }
+    }
+
+    private broadcastEmotion = (emotion: string) => {
+        EventService.emit(EmotionEvents.EMOTIONS_CURRENT_EMOTION, emotion)
     }
       
 
@@ -216,6 +221,7 @@ class EmotionServiceClass extends EventEmitter {
     private stopRealTimeAnalysis = () => {
         logInfo(`EmotionService: Stopping Emotion Capture`)
         this.initializeEmotionObject() 
+        EventService.off(EmotionEvents.EMOTIONS_CURRENT_EMOTION, this.broadcastEmotion)
     }
 
 }
