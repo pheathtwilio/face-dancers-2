@@ -13,6 +13,7 @@ import DeepgramService from '@/services/deepgram-service'
 import LLMService from '@/services/llm-service'
 import STTService from '@/services/speech-to-text-service'
 import DeepgramEvents from '@/util/deepgram-types'
+import EmotionService from '@/services/emotion-service'
 
 import { logInfo, logError } from '@/services/logger-service'
 
@@ -25,6 +26,7 @@ const WaitingRoom: React.FC = () => {
   const deepgramServiceRef = useRef<typeof DeepgramService | null>(null)
   const llmServiceRef = useRef<typeof LLMService | null>(null)
   const sttServiceRef = useRef<typeof STTService | null>(null)
+  const emotionServiceRef = useRef<typeof EmotionService | null>(null)
 
   // Audio device: both ref (for sync) and state (for UI)
   const selectedAudioDeviceRef = useRef<string>('')
@@ -55,6 +57,7 @@ const WaitingRoom: React.FC = () => {
       avatarServiceRef.current   = AvatarService
       videoServiceRef.current    = VideoService
       deepgramServiceRef.current = DeepgramService
+      emotionServiceRef.current = EmotionService
 
       startDeepgram()
       llmServiceRef.current = LLMService

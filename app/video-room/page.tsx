@@ -8,6 +8,7 @@ import AvatarEvents from '@/util/avatar-types'
 import STTEvents from '@/util/stt-types'
 import DeepgramEvents from '@/util/deepgram-types'
 import { logInfo } from '@/services/logger-service'
+import EmotionEvents from '@/util/emotion-types'
 
 
 const VideoRoom: React.FC = () => {
@@ -63,6 +64,8 @@ const VideoRoom: React.FC = () => {
       EventService.on(VideoEvents.VIDEO_LOCAL_HTML_REQUESTED, handleLocalVideoHTMLRequested)
       EventService.emit(VideoEvents.VIDEO_REQUEST_LOCAL_HTML, selectedVideoDeviceRef.current)
 
+      EventService.emit(EmotionEvents.EMOTIONS_START_EMOTION_CAPTURE)
+
       return () => {
         EventService.off(VideoEvents.VIDEO_REMOTE_HTML_REQUESTED, handleRemoteVideoHTMLRequested)
         EventService.off(VideoEvents.VIDEO_LOCAL_HTML_REQUESTED, handleLocalVideoHTMLRequested)
@@ -71,6 +74,7 @@ const VideoRoom: React.FC = () => {
         EventService.emit(VideoEvents.VIDEO_END_SESSION)
         EventService.emit(STTEvents.STT_END_SESSION)
         EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
+        EventService.emit(EmotionEvents.EMOTIONS_STOP_EMOTION_CAPTURE)
       }
         
     }, [])

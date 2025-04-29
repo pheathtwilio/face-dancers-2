@@ -14,6 +14,7 @@
     "@heygen/streaming-avatar": "^2.0.9",
     "@sentry/nextjs": "^9.6.1",
     "autoprefixer": "^10.4.21",
+    "aws-sdk": "^2.1692.0",
     "bootstrap": "^5.3.3",
     "chalk": "^5.4.1",
     "crypto": "^1.0.1",
