@@ -71,11 +71,18 @@ class VideoServiceClass extends EventEmitter {
             this.endSession()
         })
 
-        EventService.on(VideoEvents.VIDEO_REQUEST_HTML, () => {
-            logInfo(`Video-Service: ${VideoEvents.VIDEO_REQUEST_HTML}`)
+        EventService.on(VideoEvents.VIDEO_REQUEST_REMOTE_HTML, () => {
+            logInfo(`Video-Service: ${VideoEvents.VIDEO_REQUEST_REMOTE_HTML}`)
             let html: HTMLDivElement | null = null
-            html = this.getHTMLMediaElements()
-            EventService.emit(VideoEvents.VIDEO_HTML_REQUESTED, html)
+            html = this.getRemoteHTMLMediaElements()
+            EventService.emit(VideoEvents.VIDEO_REMOTE_HTML_REQUESTED, html)
+        })
+
+        EventService.on(VideoEvents.VIDEO_REQUEST_LOCAL_HTML, (videoDeviceRef: string) => {
+            logInfo(`VideoService: ${VideoEvents.VIDEO_REQUEST_LOCAL_HTML}`)
+            this.getLocalHTMLMediaElements(videoDeviceRef).then((html: HTMLDivElement) => {
+                EventService.emit(VideoEvents.VIDEO_LOCAL_HTML_REQUESTED, html)
+            })
         })
 
         EventService.on(AvatarEvents.AVATAR_START_TALKING, () => {
@@ -152,7 +159,7 @@ class VideoServiceClass extends EventEmitter {
 
     }
 
-    private getHTMLMediaElements = () => {
+    private getRemoteHTMLMediaElements = () => {
 
         if (!this.videoRoom) throw new Error('no video room has been set')
 
@@ -162,7 +169,7 @@ class VideoServiceClass extends EventEmitter {
         this.videoRoom.localParticipant.tracks.forEach((publication: LocalTrackPublication) => {
             if (publication.track) {
                 if (publication.track.kind === 'video') {
-                    logInfo(`Video-Service: Video Track Found ${publication.track}`)
+                    logInfo(`Video-Service: Video Track Found for Remote Participant ${publication.track}`)
                     const videoElement = document.createElement('video')
                     videoElement.autoplay = true
                     videoElement.playsInline = true
@@ -182,6 +189,64 @@ class VideoServiceClass extends EventEmitter {
         return this.container
     }
 
+    private getLocalHTMLMediaElements = async (videoDeviceRef: string): Promise<HTMLDivElement> => {
+
+        const videoConstraint = videoDeviceRef
+          ? { deviceId: { exact: videoDeviceRef } }
+          : true
+      
+        const constraints: MediaStreamConstraints = {
+          video: videoConstraint,
+          audio: true
+        }
+      
+        let stream: MediaStream
+        
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints)
+        } catch (e: any) {
+          // If the exact device was invalid/unavailable, fall back
+          if (e.name === 'OverconstrainedError') {
+            logError(`Video-Service: device ${videoDeviceRef} not found, falling back to default camera`)
+            // try again with default devices
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          } else {
+            logError(`Video-Service: Failed to get local media for device ${videoDeviceRef}: ${e}`)
+            throw e
+          }
+        }
+
+        const container = document.createElement('div')
+
+        const videoTrack = stream.getVideoTracks()[0]
+        if (videoTrack) {
+            logInfo(`Video-Service: Video Track Found for Local Participant ${videoTrack.label}`)
+            const v = document.createElement('video')
+            v.autoplay = true
+            v.muted = true       // preview mute
+            v.playsInline = true
+            v.srcObject = new MediaStream([videoTrack])
+            v.style.width      = '100%'
+            v.style.height     = '100%'
+            v.style.objectFit  = 'contain'
+            v.style.objectPosition = 'center center'
+            container.appendChild(v)
+        } else {
+            logError(`Video-Service: No video track in returned stream`)
+        }
+      
+        stream.getAudioTracks().forEach(track => {
+          logInfo(`Video-Service: Audio Track Found for Local Participant ${track.label}`)
+          const a = document.createElement('audio')
+          a.autoplay = true
+          a.muted = true     // preview mute
+          a.srcObject = new MediaStream([track])
+          container.appendChild(a)
+        })
+      
+        return container
+      }
+      
     private joinParticipant = async (
         userName: string,
         audioDeviceId: string, 
