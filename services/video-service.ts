@@ -44,7 +44,9 @@ class VideoServiceClass extends EventEmitter {
         super()
 
         // register listeners
-        EventService.on(AvatarEvents.AVATAR_STARTED_SESSION, (stream: MediaStream) => {
+        EventService.on(AvatarEvents.AVATAR_STARTED_SESSION, (payload: any) => {
+
+            const { stream, avatarName } = payload
 
             // create room
             this.roomName = this.generateRoomName()
@@ -56,7 +58,9 @@ class VideoServiceClass extends EventEmitter {
                 maxParticipants: 2
             }
 
-            this.createRoomFromStream('Sofie', this.roomPrefs, stream)
+            console.log(`avatarName ${avatarName}`)
+
+            this.createRoomFromStream(avatarName, this.roomPrefs, stream)
         })
 
         EventService.on(VideoEvents.VIDEO_ROOM_DETAILS, () => {

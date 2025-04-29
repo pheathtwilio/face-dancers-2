@@ -107,7 +107,12 @@ class AvatarServiceClass extends EventEmitter {
             if(e.detail)
                 this.stream = e.detail
 
-            EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, this.stream) 
+            const payload = {
+                stream: this.stream,
+                avatarName: this.useCase.avatar_name
+            }
+
+            EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, payload) 
         })
         this.avatar.on(StreamingEvents.USER_START, (e) => {})
         this.avatar.on(StreamingEvents.USER_STOP, (e) => {})
