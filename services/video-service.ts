@@ -58,7 +58,7 @@ class VideoServiceClass extends EventEmitter {
                 maxParticipants: 2
             }
 
-            console.log(`avatarName ${avatarName}`)
+            logInfo(`Video-Service: Avatar Name - ${avatarName}`)
 
             this.createRoomFromStream(avatarName, this.roomPrefs, stream)
         })
