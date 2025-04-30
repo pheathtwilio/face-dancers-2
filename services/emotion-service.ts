@@ -6,7 +6,7 @@ import { Rekognition } from 'aws-sdk'
 import { logInfo, logError } from '@/services/logger-service'
 
 import { VideoEvents } from '@/util/video-types'
-import EmotionEvents from '@/util/emotion-types'
+import { EmotionEvents } from '@/util/emotion-types'
 
 interface EmotionObjectInterface {
     isSet: boolean

@@ -8,15 +8,19 @@ import type { UseCase } from '@/app/config/config'
 import ConfigEvents from '@/util/config-types'
 import llmTypes from '@/util/llm-types'
 import { logInfo, logError } from '@/services/logger-service'
+import { EmotionEvents, EmotionTypes } from '@/util/emotion-types'
 
 class LLMServiceClass extends EventEmitter {
 
     private static instance: LLMServiceClass
     private openAI: OpenAI | null = null
     private useCase: UseCase = configData.useCase
+    private currentEmotion: string | ''
 
     private constructor() {
         super()
+
+        this.currentEmotion = EmotionTypes.EMOTIONS_DEFAULT_EMOTION
 
         EventService.on(ConfigEvents.CONFIG_USECASE_GOT, (useCase: UseCase) => {
             this.useCase = useCase
@@ -24,11 +28,15 @@ class LLMServiceClass extends EventEmitter {
 
         EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
             // get the chat completion for the utterance
-            this.completion(utterance)
+            this.completion(utterance, this.currentEmotion)
         })
 
         EventService.on(llmTypes.LLM_INTERRUPT, () => {
             logInfo(`LLM-SERVICE: INTERRUPT`)
+        })
+
+        EventService.on(EmotionEvents.EMOTIONS_CURRENT_EMOTION, (emotion: string) => {
+            this.currentEmotion = emotion
         })
     }
 
@@ -40,7 +48,7 @@ class LLMServiceClass extends EventEmitter {
         return LLMServiceClass.instance
     }
 
-    private completion = async (utterance: string) => {
+    private completion = async (utterance: string, currentEmotion: string) => {
         if(!utterance) return
 
         const useCase = this.useCase
@@ -51,7 +59,7 @@ class LLMServiceClass extends EventEmitter {
                 'Connection':'keep-alive',
                 'Content-Type':'application/json'
             },
-            body: JSON.stringify({ utterance, useCase }),
+            body: JSON.stringify({ utterance, useCase, currentEmotion }),
         })
 
         const data = await response.json()

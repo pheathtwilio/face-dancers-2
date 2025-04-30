@@ -8,7 +8,7 @@ import AvatarEvents from '@/util/avatar-types'
 import STTEvents from '@/util/stt-types'
 import DeepgramEvents from '@/util/deepgram-types'
 import { logInfo } from '@/services/logger-service'
-import EmotionEvents from '@/util/emotion-types'
+import { EmotionEvents } from '@/util/emotion-types'
 
 
 const VideoRoom: React.FC = () => {

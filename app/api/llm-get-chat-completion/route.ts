@@ -12,8 +12,10 @@ export async function POST(req: Request){
 
     try{
 
-        const { utterance, useCase } = await req.json()
+        const { utterance, useCase, currentEmotion } = await req.json()
         if(!utterance) throw new Error(`No utterance provided to LLM`)
+
+        logInfo(`LLM-Get-Chat-Completion: user said ${utterance} and is feeling ${currentEmotion}`)
 
         let stream: any = null
         let openai: OpenAI
@@ -23,7 +25,14 @@ export async function POST(req: Request){
             case llmTypes.OPENAI:
                 openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
                 stream = await openai!.chat.completions.create({
-                    messages: [{ role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
+                    messages: [
+                        { role: 'system', content: useCase.prompt }, 
+                        { role: 'system', content: `The user is currently feeling **${currentEmotion}.
+                                                    Make sure to include their emotion into the way you respond.
+                                                    If you do comment on their current emotional state, make sure 
+                                                    you tell them that you see or observe that they are in that emotion.
+                                                    `},
+                        { role: 'user', content: utterance }],
                     model: 'gpt-3.5-turbo-1106',
                     stream: true
                 })
@@ -31,7 +40,14 @@ export async function POST(req: Request){
             case llmTypes.GROQ:
                 groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
                 stream = await groq!.chat.completions.create({
-                    messages: [ { role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
+                    messages: [ 
+                        { role: 'system', content: useCase.prompt }, 
+                        { role: 'system', content: `The user is currently feeling **${currentEmotion}.
+                                                    Make sure to include their emotion into the way you respond.
+                                                    If you do comment on their current emotional state, make sure 
+                                                    you tell them that you see or observe that they are in that emotion.
+                                                    `},
+                        { role: 'user', content: utterance }],
                     model: 'llama3-8b-8192',
                     stream: true
                 })
@@ -39,7 +55,14 @@ export async function POST(req: Request){
             default:
                 openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
                 stream = await openai!.chat.completions.create({
-                    messages: [{ role: 'system', content: useCase.prompt }, { role: 'user', content: utterance }],
+                    messages: [
+                        { role: 'system', content: useCase.prompt }, 
+                        { role: 'system', content: `The user is currently feeling **${currentEmotion}.
+                                                    Make sure to include their emotion into the way you respond.
+                                                    If you do comment on their current emotional state, make sure 
+                                                    you tell them that you see or observe that they are in that emotion.
+                                                    `},
+                        { role: 'user', content: utterance }],
                     model: 'gpt-3.5-turbo-1106',
                     stream: true
                 })
