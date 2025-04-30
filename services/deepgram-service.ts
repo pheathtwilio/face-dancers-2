@@ -6,6 +6,7 @@ import { createClient, DeepgramClient, ListenLiveClient, LiveTranscriptionEvents
 
 import { logInfo, logError } from '@/services/logger-service'
 import AvatarEvents from '@/util/avatar-types'
+import llmTypes from '@/util/llm-types'
 
 type DeepgramSTTOptions = {
     apiKey: string
@@ -150,7 +151,7 @@ class DeepgramServiceClass extends EventEmitter {
     }
 
     private sendInterrupt = () => {
-        EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
+        EventService.emit(llmTypes.LLM_INTERRUPT)
     }
 
     private sendUtterance = (utterance: string) => {
@@ -161,7 +162,7 @@ class DeepgramServiceClass extends EventEmitter {
         this.stopKeepAlive()
         await this.connection?.requestClose()
         this.deepgram = null
-        EventService.off(AvatarEvents.AVATAR_STOP_TALKING, this.sendInterrupt)
+        EventService.off(llmTypes.LLM_INTERRUPT, this.sendInterrupt)
         EventService.off(STTEvents.STT_SEND_SPEECH_DATA, this.sendVoiceData)
         EventService.off(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, this.sendUtterance)
     }

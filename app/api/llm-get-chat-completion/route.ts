@@ -1,89 +1,108 @@
 import OpenAI from 'openai'
-import { configData } from '@/app/config/config'
 import Groq from 'groq-sdk'
+import { configData } from '@/app/config/config'
 import llmTypes from '@/util/llm-types'
 import { logInfo, logError } from '@/services/logger-service'
 
-export async function GET(req: Request){
-  return new Response(JSON.stringify({error: 'GET method not allowed'}), {status: 405})
-}
+export const config = { runtime: 'edge' }
 
-export async function POST(req: Request){
+// instantiate once
+const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const groqClient   = new Groq({  apiKey: process.env.GROQ_API_KEY  })
 
-    try{
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const utterance      = searchParams.get('utterance')      || ''
+    const currentEmotion = searchParams.get('currentEmotion') || ''
+    const useCaseParam   = searchParams.get('useCase')        || ''
 
-        const { utterance, useCase, currentEmotion } = await req.json()
-        if(!utterance) throw new Error(`No utterance provided to LLM`)
+    if (!utterance)      return new Response('Missing `utterance`', { status: 400 })
+    if (!useCaseParam)   return new Response('Missing `useCase`',  { status: 400 })
 
-        logInfo(`LLM-Get-Chat-Completion: user said ${utterance} and is feeling ${currentEmotion}`)
-
-        let stream: any = null
-        let openai: OpenAI
-        let groq: Groq
-
-        switch(configData.llm){
-            case llmTypes.OPENAI:
-                openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
-                stream = await openai!.chat.completions.create({
-                    messages: [
-                        { role: 'system', content: useCase.prompt }, 
-                        { role: 'system', content: `The user is currently feeling **${currentEmotion}.
-                                                    Make sure to include their emotion into the way you respond.
-                                                    If you do comment on their current emotional state, make sure 
-                                                    you tell them that you see or observe that they are in that emotion.
-                                                    `},
-                        { role: 'user', content: utterance }],
-                    model: 'gpt-3.5-turbo-1106',
-                    stream: true
-                })
-                break
-            case llmTypes.GROQ:
-                groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-                stream = await groq!.chat.completions.create({
-                    messages: [ 
-                        { role: 'system', content: useCase.prompt }, 
-                        { role: 'system', content: `The user is currently feeling **${currentEmotion}.
-                                                    Make sure to include their emotion into the way you respond.
-                                                    If you do comment on their current emotional state, make sure 
-                                                    you tell them that you see or observe that they are in that emotion.
-                                                    `},
-                        { role: 'user', content: utterance }],
-                    model: 'llama3-8b-8192',
-                    stream: true
-                })
-                break
-            default:
-                openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
-                stream = await openai!.chat.completions.create({
-                    messages: [
-                        { role: 'system', content: useCase.prompt }, 
-                        { role: 'system', content: `The user is currently feeling **${currentEmotion}.
-                                                    Make sure to include their emotion into the way you respond.
-                                                    If you do comment on their current emotional state, make sure 
-                                                    you tell them that you see or observe that they are in that emotion.
-                                                    `},
-                        { role: 'user', content: utterance }],
-                    model: 'gpt-3.5-turbo-1106',
-                    stream: true
-                })
-                break
-        }
-
-        const completion: string[] = []
-
-        for await (const chunk of stream){
-            const content = chunk.choices[0]?.delta?.content || ''
-            completion.push(content)
-        }
-
-        logInfo(`llm-get-chat-completion: ${completion.join("")}`)
-        return new Response(JSON.stringify({ success: true, item: completion.join("") }), {status: 200})
-
-    } catch (e) {
-        logError(`llm-get-chat-completion: ${e}`)
-        return new Response(JSON.stringify({ success: false, message: e }), {status: 500})
+    let useCase: { prompt: string }
+    try {
+      useCase = JSON.parse(useCaseParam)
+    } catch {
+      return new Response('Invalid JSON for `useCase`', { status: 400 })
     }
 
-}
+    logInfo(`LLM-Stream GET: utterance="${utterance}" emotion="${currentEmotion}"`)
 
-export const config = { runtime: 'edge' }
+    const llmStream = configData.llm === llmTypes.GROQ
+      ? await groqClient.chat.completions.create({
+          model: 'llama3-8b-8192',
+          stream: true,
+          messages: [
+            { role: 'system', content: useCase.prompt },
+            { role: 'system', content: `User feels **${currentEmotion}**—acknowledge you see that.` },
+            { role: 'user',   content: utterance }
+          ]
+        })
+      : await openaiClient.chat.completions.create({
+          model: 'gpt-3.5-turbo-1106',
+          stream: true,
+          messages: [
+            { role: 'system', content: useCase.prompt },
+            { role: 'system', content: `User feels **${currentEmotion}**—acknowledge you see that.` },
+            { role: 'user',   content: utterance }
+          ]
+        })
+
+    const sentenceRe = /([^\.!\?]+[\.!\?])/g
+    const encoder    = new TextEncoder()
+    let buffer       = ''
+    let lastFlush    = 0
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const packet of llmStream) {
+            const tok = packet.choices[0]?.delta?.content
+            if (!tok) continue
+
+            buffer += tok
+            sentenceRe.lastIndex = 0
+
+            let match: RegExpExecArray | null
+            while ((match = sentenceRe.exec(buffer)) !== null) {
+              const snippet = match[0]
+              lastFlush = sentenceRe.lastIndex
+
+              const sse = `data: ${JSON.stringify({ text: snippet.trim() })}\n\n`
+              controller.enqueue(encoder.encode(sse))
+            }
+
+            if (lastFlush > 0) {
+              buffer = buffer.slice(lastFlush)
+              lastFlush = 0
+            }
+          }
+
+          // flush any trailing text
+          if (buffer.trim()) {
+            const trailing = `data: ${JSON.stringify({ text: buffer.trim() })}\n\n`
+            controller.enqueue(encoder.encode(trailing))
+          }
+          controller.close()
+
+        } catch (err) {
+          logError(`Streaming error: ${err}`)
+          controller.error(err)
+        }
+      }
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type':  'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection:      'keep-alive'
+      }
+    })
+
+  } catch (err) {
+    logError(`LLM-GET-chat-completion error: ${err}`)
+    return new Response(null, { status: 500 })
+  }
+}

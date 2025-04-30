@@ -2,7 +2,6 @@ import DeepgramEvents from '@/util/deepgram-types'
 import EventEmitter from 'events'
 import EventService from './event-service'
 import AvatarEvents from '@/util/avatar-types'
-import OpenAI from 'openai'
 import { configData } from '@/app/config/config'
 import type { UseCase } from '@/app/config/config'
 import ConfigEvents from '@/util/config-types'
@@ -11,61 +10,60 @@ import { logInfo, logError } from '@/services/logger-service'
 import { EmotionEvents, EmotionTypes } from '@/util/emotion-types'
 
 class LLMServiceClass extends EventEmitter {
+  private static instance: LLMServiceClass
+  private useCase: UseCase = configData.useCase
+  private currentEmotion: string = EmotionTypes.EMOTIONS_DEFAULT_EMOTION
 
-    private static instance: LLMServiceClass
-    private openAI: OpenAI | null = null
-    private useCase: UseCase = configData.useCase
-    private currentEmotion: string | ''
+  private constructor() {
+    super()
+    EventService.on(ConfigEvents.CONFIG_USECASE_GOT, (useCase) => {
+      this.useCase = useCase
+    })
+    EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
+      this.completion(utterance, this.currentEmotion)
+    })
+    EventService.on(EmotionEvents.EMOTIONS_CURRENT_EMOTION, (emotion) => {
+      this.currentEmotion = emotion
+    })
+  }
 
-    private constructor() {
-        super()
+  public static getInstance(): LLMServiceClass {
+    if (!LLMServiceClass.instance) {
+      LLMServiceClass.instance = new LLMServiceClass()
+    }
+    return LLMServiceClass.instance
+  }
 
-        this.currentEmotion = EmotionTypes.EMOTIONS_DEFAULT_EMOTION
+  private completion = (utterance: string, currentEmotion: string) => {
+    if (!utterance) return
 
-        EventService.on(ConfigEvents.CONFIG_USECASE_GOT, (useCase: UseCase) => {
-            this.useCase = useCase
-        })
+    // Build a query string with our payload
+    const params = new URLSearchParams({
+      utterance,
+      currentEmotion,
+      useCase: JSON.stringify(this.useCase)
+    }).toString()
 
-        EventService.on(DeepgramEvents.DEEPGRAM_TRANSCRIPTION_EVENT, (utterance) => {
-            // get the chat completion for the utterance
-            this.completion(utterance, this.currentEmotion)
-        })
+    logInfo(`LLMService: opening SSE for “${utterance}” (emotion=${currentEmotion})`)
 
-        EventService.on(llmTypes.LLM_INTERRUPT, () => {
-            logInfo(`LLM-SERVICE: INTERRUPT`)
-        })
+    // Open the SSE connection
+    const es = new EventSource(`/api/llm-get-chat-completion?${params}`)
 
-        EventService.on(EmotionEvents.EMOTIONS_CURRENT_EMOTION, (emotion: string) => {
-            this.currentEmotion = emotion
-        })
+    es.onmessage = (event) => {
+      try {
+        const { text } = JSON.parse(event.data)
+        logInfo(`LLMService: received snippet → "${text}"`)
+        EventService.emit(AvatarEvents.AVATAR_SAY, text)
+      } catch (err) {
+        logError(`LLMService: failed to parse SSE data: ${err}`)
+      }
     }
 
-    // Singleton pattern to ensure a single instance of the LLMService
-    public static getInstance(): LLMServiceClass {
-        if (!LLMServiceClass.instance) {
-        LLMServiceClass.instance = new LLMServiceClass()
-        }
-        return LLMServiceClass.instance
+    es.onerror = (err) => {
+      logError(`LLMService SSE error: ${err}`)
+      es.close()
     }
-
-    private completion = async (utterance: string, currentEmotion: string) => {
-        if(!utterance) return
-
-        const useCase = this.useCase
-
-        const response = await fetch('/api/llm-get-chat-completion', {
-            method: 'POST',
-            headers: { 
-                'Connection':'keep-alive',
-                'Content-Type':'application/json'
-            },
-            body: JSON.stringify({ utterance, useCase, currentEmotion }),
-        })
-
-        const data = await response.json()
-        EventService.emit(AvatarEvents.AVATAR_SAY, data.item)
-    }
-
+  }
 }
 
 const LLMService = LLMServiceClass.getInstance()

@@ -1,214 +1,221 @@
 import EventEmitter from 'events'
 import StreamingAvatar, {
-    AvatarQuality,
-    StreamingEvents,
-    TaskMode,
-    TaskType,
-    VoiceEmotion,
-  } from '@heygen/streaming-avatar'
+  AvatarQuality,
+  StreamingEvents,
+  TaskMode,
+  TaskType,
+  VoiceEmotion,
+} from '@heygen/streaming-avatar'
 import EventService from './event-service'
 import AvatarEvents from '../util/avatar-types'
 import { configData, UseCase } from '@/app/config/config'
-
 import { logInfo, logError } from '@/services/logger-service'
 import ConfigEvents from '@/util/config-types'
+import { EmotionEvents, EmotionTypes } from '@/util/emotion-types'
 import llmTypes from '@/util/llm-types'
 
 class AvatarServiceClass extends EventEmitter {
-    private static instance: AvatarServiceClass
+  private static instance: AvatarServiceClass
 
-    private language: string = 'en'
+  private language = 'en'
+  private stream?: (stream: MediaStream) => void
+  private avatar: StreamingAvatar | null = null
+  private token = ''
+  private useCase: UseCase = configData.useCase
 
-    private stream: ((stream: MediaStream) => void) | undefined
-    private avatar: StreamingAvatar | null = null
-    private token: string = ''
-    private useCase: UseCase = configData.useCase
+  private avatarIsSpeaking = false
+  private snippetQueue: string[] = []
 
-    private isLoadingSession: boolean = false
-    private isLoadingRepeat: boolean = false
+  private constructor() {
+    super()
 
-    private avatarIsSpeaking: boolean = false
+    // keep useCase up to date
+    EventService.on(ConfigEvents.CONFIG_USECASE_GOT, (useCase: UseCase) => {
+      this.useCase = useCase
+    })
 
-    // Private constructor prevents external instantiation
-    private constructor() {
-        super()
+    // session lifecycle
+    EventService.on(AvatarEvents.AVATAR_INITIALIZE,    () => this.initialize())
+    EventService.on(AvatarEvents.AVATAR_END_SESSION,   () => this.endSession())
+    EventService.on(AvatarEvents.AVATAR_CLOSE_SESSION, (id: string) => this.closeSession(id))
+    EventService.on(AvatarEvents.AVATAR_GET_SESSIONS,  () => this.getSessions())
+    EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () =>
+      this.enqueueSnippet(this.useCase.greeting)
+    )
 
-        // register events
-        EventService.on(AvatarEvents.AVATAR_INITIALIZE, () => {
-            this.initialize()
-        })
+    // enqueue LLM outputs
+    EventService.on(AvatarEvents.AVATAR_SAY, (words: string) =>
+      this.enqueueSnippet(words)
+    )
 
-        EventService.on(AvatarEvents.AVATAR_END_SESSION, () => {
-            this.endSession()
-        })
+    // handle interrupt
+    EventService.on(llmTypes.LLM_INTERRUPT, () => this.handleInterrupt())
 
-        EventService.on(AvatarEvents.AVATAR_CLOSE_SESSION, (sessionId) => {
-            this.closeSession(sessionId)
-        })
+    // when the SDK signals a snippet is done
+    EventService.on(AvatarEvents.AVATAR_STOP_TALKING, () => {
+      this.avatarIsSpeaking = false
+      if (this.snippetQueue.length === 0) {
+        logInfo(
+          `Avatar-Service: on AvatarEvents.AVATAR_STOP_TALKING → signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_END}`
+        )
+        EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_END)
+      }
+      this.trySpeakNext()
+    })
+  }
 
-        EventService.on(AvatarEvents.AVATAR_GET_SESSIONS, () => {
-            this.getSessions()
-        })
-
-        EventService.on(AvatarEvents.AVATAR_SEND_WELCOME_MESSAGE, () => {
-            this.handleSpeak(this.useCase.greeting)
-        })
-
-        EventService.on(AvatarEvents.AVATAR_SAY, (words) => {
-            this.handleSpeak(words)
-        })
-
-        EventService.on(AvatarEvents.AVATAR_STOP_TALKING, () => {
-            this.interrupt()
-        })
-
+  public static getInstance(): AvatarServiceClass {
+    if (!AvatarServiceClass.instance) {
+      AvatarServiceClass.instance = new AvatarServiceClass()
     }
+    return AvatarServiceClass.instance
+  }
 
-    // Static method to get the single instance
-    public static getInstance(): AvatarServiceClass {
-        if (!AvatarServiceClass.instance) {
-            AvatarServiceClass.instance = new AvatarServiceClass()
-        }
-        return AvatarServiceClass.instance
+  private fetchAccessToken = async (): Promise<string> => {
+    try {
+      const res = await fetch('/api/avatar', { method: 'POST' })
+      const { token } = await res.json()
+      return token
+    } catch (e) {
+      logError(`Avatar-Service: fetch token error: ${e}`)
+      return ''
     }
+  }
 
-    private fetchAccessToken = async () => {
-        try {
-            const response = await fetch('/api/avatar', { method: 'POST' })
-            const wallet = await response.json()
-            return wallet.token
-        } catch (e) {
-            logError(`Avatar-Service: Error Fetching Access Token ${e}`)
-        }
-        return ''
+  public async initialize() {
+    this.token = await this.fetchAccessToken()
+    this.avatar = new StreamingAvatar({ token: this.token })
+
+    // wait for useCase if not already set
+    this.useCase = await new Promise<UseCase>((resolve) => {
+      EventService.once(ConfigEvents.CONFIG_USECASE_GOT, resolve)
+      EventService.emit(ConfigEvents.CONFIG_GET_USECASE)
+    })
+
+    // wire SDK events
+    this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, async () =>
+      this.endSession()
+    )
+
+    this.avatar.on(StreamingEvents.STREAM_READY, (e) => {
+      logInfo(AvatarEvents.AVATAR_STREAM_READY)
+      if (e.detail) this.stream = e.detail
+      EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, {
+        stream: this.stream,
+        avatarName: this.useCase.avatar_name,
+      })
+    })
+
+    this.avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+      // first snippet? session start
+      if (!this.avatarIsSpeaking && this.snippetQueue.length > 0) {
+        logInfo(
+          `Avatar-Service: on StreamingEvents.AVATAR_START_TALKING → signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_START}`
+        )
+        EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_START)
+      }
+    })
+
+    this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+      logInfo('Avatar-Service: snippet done')
+      EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
+    })
+
+    try {
+      await this.avatar.createStartAvatar({
+        quality: AvatarQuality.High,
+        avatarName: this.useCase.avatar_id,
+        voice: { rate: 1.5, emotion: VoiceEmotion.EXCITED },
+        language: this.language,
+        disableIdleTimeout: true,
+      })
+    } catch (e) {
+      logError(`Avatar-Service: createStartAvatar error: ${e}`)
     }
+  }
 
-    public async initialize() {
-        this.token = await this.fetchAccessToken()
-        this.isLoadingSession = true
-        this.avatar = new StreamingAvatar({token: this.token})
-
-
-        this.useCase = await new Promise<UseCase>((resolve) => {
-
-            EventService.on(ConfigEvents.CONFIG_USECASE_GOT, (useCase: UseCase) => {
-                resolve(useCase)
-            })
-
-            EventService.emit(ConfigEvents.CONFIG_GET_USECASE)
-        })
-
-        // Register Events
-        this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, async () => {
-            await this.endSession()
-        })
-        this.avatar.on(StreamingEvents.STREAM_READY, (e) => {
-            logInfo(AvatarEvents.AVATAR_STREAM_READY)
-            if(e.detail)
-                this.stream = e.detail
-
-            const payload = {
-                stream: this.stream,
-                avatarName: this.useCase.avatar_name
-            }
-
-            EventService.emit(AvatarEvents.AVATAR_STARTED_SESSION, payload) 
-        })
-        this.avatar.on(StreamingEvents.USER_START, (e) => {})
-        this.avatar.on(StreamingEvents.USER_STOP, (e) => {})
-        this.avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-            this.avatarIsSpeaking = true
-            logInfo('Avatar-Service: Avatar started talking')
-            EventService.emit(AvatarEvents.AVATAR_START_TALKING)
-        })
-        this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-            this.avatarIsSpeaking = false
-            logInfo('Avatar-Service: Avatar stopped talking')
-            EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
-        })
-
-        try {
-
-            const response = await this.avatar.createStartAvatar({
-                quality: AvatarQuality.High,
-                avatarName: this.useCase.avatar_id,
-                voice: { rate: 1.5, emotion: VoiceEmotion.EXCITED },
-                language: this.language,
-                disableIdleTimeout: true
-            })
-
-        }catch(e){
-            logError(`Avatar Service: Error Creating Avatar ${e}`)
-        }finally{
-            this.isLoadingSession = false
-        }
-
+  public async getSessions() {
+    try {
+      const res = await fetch('/api/avatar-get-sessions')
+      const data = await res.json()
+      EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, data.item)
+    } catch (e) {
+      logError(`Avatar-Service: getSessions error: ${e}`)
     }
+  }
 
-    public getSessions = async () => {
-   
-        try{
-
-            const response = await fetch('/api/avatar-get-sessions')
-            const data = await response.json()
-            EventService.emit(AvatarEvents.AVATAR_SESSIONS_GOT, (data.item))
-
-        }catch(e){logError(`Avatar-Service: Error Creating Session ${e}`)}
+  public async closeSession(id: string) {
+    try {
+      await fetch('/api/avatar-close-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+    } catch (e) {
+      logError(`Avatar-Service: closeSession error: ${e}`)
     }
+  }
 
-    public closeSession = async (id: string) => {
- 
-
-        try{
-        
-            const response = await fetch('/api/avatar-close-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type':'application/json'
-                },
-                body: JSON.stringify({
-                    id: id
-                })
-            })
-
-            const data = await response.json()   
-            return data
-
-        }catch(e){logError(`Avatar-Service: Stop Streaming Error ${e}`)}
+  public async endSession() {
+    EventService.emit(AvatarEvents.AVATAR_SESSION_ENDED)
+    if (this.avatar) {
+      try {
+        this.stream = undefined
+        await this.avatar.stopAvatar()
+      } catch (e) {
+        logError(`Avatar-Service: stopAvatar error: ${e}`)
+      }
     }
+  }
 
-    public endSession = async () => {
-        logInfo(`Avatar-Service: ${AvatarEvents.AVATAR_SESSION_ENDED}`)
-        EventService.emit(AvatarEvents.AVATAR_SESSION_ENDED)
-        if(this.avatar)
-            try{
-                await this.avatar.stopAvatar()
-                this.stream = undefined
-            }catch(e){logError(`Avatar-Service: Session End Error ${e}`)}    
+  /** Interrupt: stop current speech, clear pending, end session */
+  private handleInterrupt() {
+    logInfo('Avatar-Service: INTERRUPT – flushing queue')
+    this.snippetQueue = []
+    this.avatarIsSpeaking = false
+    if (this.avatar) {
+      this.avatar.interrupt().catch((e) =>
+        logError(`Avatar-Service: interrupt error: ${e}`)
+      )
     }
+    EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_END)
+  }
 
-    private interrupt = async () => {
-        if(this.avatarIsSpeaking){
-            // an interrupt is happening notify the LLM to save the current context
-            EventService.emit(llmTypes.LLM_INTERRUPT)
-        }
-        this.avatar?.interrupt().catch((e) => logInfo(`Avatar-Service: Interrupt - ${e.message}`))
+  /** Enqueue text and start speaking if idle */
+  private enqueueSnippet(text: string) {
+    logInfo(`Avatar-Service: Enqueueing snippet → "${text}"`)
+    const wasIdle = !this.avatarIsSpeaking && this.snippetQueue.length === 0
+    this.snippetQueue.push(text)
+    if (wasIdle) {
+      logInfo(
+        `Avatar-Service: onEnqueue → signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_START}`
+      )
+      EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_START)
+      this.trySpeakNext()
     }
+  }
 
-    public handleSpeak = async (text: string) => {
+  /** Dequeue and speak next snippet if available */
+  private trySpeakNext() {
+    if (this.avatarIsSpeaking || !this.avatar || this.snippetQueue.length === 0)
+      return
 
-        if (!this.avatar) {
-            logInfo(`Avatar-Service: Avatar API not initialized`)
-            return
-        }
+    const nextText = this.snippetQueue.shift()!
+    logInfo(`Avatar-Service: speak → "${nextText}"`)
+    this.avatarIsSpeaking = true
 
-        await this.avatar.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => logInfo(`Avatar-Service: Speaking - ${e.message}`))
-
-    }
-
+    this.avatar
+      .speak({
+        text: nextText,
+        taskType: TaskType.REPEAT,
+        taskMode: TaskMode.ASYNC,
+      })
+      .catch((e) => {
+        logError(`Avatar-Service: speak error: ${e}`)
+        this.avatarIsSpeaking = false
+        this.trySpeakNext()
+      })
+  }
 }
 
-// Export the singleton instance
-const AvatarService = AvatarServiceClass.getInstance()
-export default AvatarService
-
+export default AvatarServiceClass.getInstance()
