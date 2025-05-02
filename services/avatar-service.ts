@@ -11,7 +11,6 @@ import AvatarEvents from '../util/avatar-types'
 import { configData, UseCase } from '@/app/config/config'
 import { logInfo, logError } from '@/services/logger-service'
 import ConfigEvents from '@/util/config-types'
-import { EmotionEvents, EmotionTypes } from '@/util/emotion-types'
 import llmTypes from '@/util/llm-types'
 
 class AvatarServiceClass extends EventEmitter {
@@ -53,15 +52,17 @@ class AvatarServiceClass extends EventEmitter {
 
     // when the SDK signals a snippet is done
     EventService.on(AvatarEvents.AVATAR_STOP_TALKING, () => {
+      logInfo(`Avatar-Service: received STOP_TALKING event -> avatarIsSpeaking = false`)
       this.avatarIsSpeaking = false
       if (this.snippetQueue.length === 0) {
         logInfo(
-          `Avatar-Service: on AvatarEvents.AVATAR_STOP_TALKING → signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_END}`
+          `Avatar-Service: on AvatarEvents.AVATAR_STOP_TALKING -> signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_END}`
         )
         EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_END)
       }
       this.trySpeakNext()
     })
+
   }
 
   public static getInstance(): AvatarServiceClass {
@@ -110,15 +111,23 @@ class AvatarServiceClass extends EventEmitter {
       // first snippet? session start
       if (!this.avatarIsSpeaking && this.snippetQueue.length > 0) {
         logInfo(
-          `Avatar-Service: on StreamingEvents.AVATAR_START_TALKING → signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_START}`
+          `Avatar-Service: on StreamingEvents.AVATAR_START_TALKING -> signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_START}`
         )
         EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_START)
       }
     })
 
     this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-      logInfo('Avatar-Service: snippet done')
-      EventService.emit(AvatarEvents.AVATAR_STOP_TALKING)
+      logInfo('Avatar-Service: snippet finished -> resetting speaking flag')
+
+      this.avatarIsSpeaking = false
+      if(this.snippetQueue.length === 0){
+        logInfo(
+          `Avatar-Service: queue empty -> signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_END}`
+        )
+        EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_END)
+      }
+      this.trySpeakNext()
     })
 
     try {
@@ -168,9 +177,9 @@ class AvatarServiceClass extends EventEmitter {
     }
   }
 
-  /** Interrupt: stop current speech, clear pending, end session */
+  // Interrupt: stop current speech, clear pending, end session 
   private handleInterrupt() {
-    logInfo('Avatar-Service: INTERRUPT – flushing queue')
+    logInfo('Avatar-Service: INTERRUPT -> flushing queue')
     this.snippetQueue = []
     this.avatarIsSpeaking = false
     if (this.avatar) {
@@ -181,32 +190,35 @@ class AvatarServiceClass extends EventEmitter {
     EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_END)
   }
 
-  /** Enqueue text and start speaking if idle */
+  // Enqueue text and start speaking if idle 
   private enqueueSnippet(text: string) {
-    logInfo(`Avatar-Service: Enqueueing snippet → "${text}"`)
-    const wasIdle = !this.avatarIsSpeaking && this.snippetQueue.length === 0
+    logInfo(`Avatar-Service: Enqueueing snippet -> "${text}"`)
+
+    const wasEmpty = this.snippetQueue.length === 0
     this.snippetQueue.push(text)
-    if (wasIdle) {
-      logInfo(
-        `Avatar-Service: onEnqueue → signalling ${AvatarEvents.AVATAR_SPEECH_SESSION_START}`
-      )
+    if(wasEmpty){
       EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_START)
-      this.trySpeakNext()
     }
+    this.trySpeakNext()
   }
 
-  /** Dequeue and speak next snippet if available */
+  // Dequeue and speak next snippet if available 
   private trySpeakNext() {
-    if (this.avatarIsSpeaking || !this.avatar || this.snippetQueue.length === 0)
+    if (this.avatarIsSpeaking || !this.avatar) return
+  
+    const next = this.snippetQueue.shift()
+    if (!next) {
+      // no more snippets → session end
+      EventService.emit(AvatarEvents.AVATAR_SPEECH_SESSION_END)
       return
-
-    const nextText = this.snippetQueue.shift()!
-    logInfo(`Avatar-Service: speak → "${nextText}"`)
+    }
+  
+    logInfo(`Avatar-Service: Dequeuing snippet SPEAK -> "${next}"`)
     this.avatarIsSpeaking = true
-
+  
     this.avatar
       .speak({
-        text: nextText,
+        text: next,
         taskType: TaskType.REPEAT,
         taskMode: TaskMode.ASYNC,
       })

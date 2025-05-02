@@ -14,6 +14,7 @@ type DeepgramSTTOptions = {
         language?: string
         punctuate?: boolean
         interimResults?: boolean
+        vad_events?: boolean
     }
 }
 
@@ -24,12 +25,14 @@ class DeepgramServiceClass extends EventEmitter {
     private connection: ListenLiveClient | undefined = undefined
     private readonly KEEP_ALIVE_INTERVAL = 10000
     private keepAliveInterval: NodeJS.Timeout | null = null
+    private speechStarted: boolean = false
     private options: DeepgramSTTOptions | null = {
         apiKey: '',
         config: {
             language: 'en',
             punctuate: true,
             interimResults: true,
+            vad_events: true,
         }
     }
 
@@ -105,6 +108,11 @@ class DeepgramServiceClass extends EventEmitter {
             this.startKeepAlive()
         })
 
+        this.connection?.on(LiveTranscriptionEvents.SpeechStarted, () => {
+            // when detecting speech tell the avatar to stop talking
+            logInfo(`Deepgram-Service: Speech Started Detected at ${new Date().getTime()}`)
+        })
+
         let is_finals: string[] = []
         this.connection?.on(LiveTranscriptionEvents.Transcript, (data) => {
 
@@ -112,8 +120,11 @@ class DeepgramServiceClass extends EventEmitter {
 
             if(sentence.length == 0) return // ignore empty transcripts
 
-            // when detecting speech tell the avatar to stop talking
-            this.sendInterrupt()
+            if(!this.speechStarted){
+                this.speechStarted = true
+                logInfo(`Deepgram-Service: Confirmed Speech Start via Transcript, sending INTERRUPT`)
+                this.sendInterrupt()
+            }
 
             if(data.is_final){
                 //  concatenate the pieces
@@ -124,6 +135,7 @@ class DeepgramServiceClass extends EventEmitter {
                     is_finals = []
                     this.sendUtterance(utterance)
                     logInfo(`Deepgram-Service: Utterance - ${sentence}`)
+                    this.speechStarted = false
                 }else{
                 // good for real-time captioning
                 }

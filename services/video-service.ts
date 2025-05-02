@@ -265,17 +265,15 @@ class VideoServiceClass extends EventEmitter {
     const audioElement = this.container.querySelector('audio')
     audioElement!.muted = false
     audioElement?.play().catch(e => logError(`Video-Service: Audio Play Error ${e}`))
+  }
 
-    }
+  private muteAudio = () => {
+      if(!this.container) throw new Error('cannot mute audio, html div does not exist')
 
-    private muteAudio = () => {
-        if(!this.container) throw new Error('cannot mute audio, html div does not exist')
-
-        logInfo(`Video-Service: Muting Video`)
-        const audioElement = this.container.querySelector('audio')
-        audioElement!.muted = true
-    }
-
+      logInfo(`Video-Service: Muting Video`)
+      const audioElement = this.container.querySelector('audio')
+      audioElement!.muted = true
+  }
 
   private listRooms = async () => {
     try {

@@ -44,7 +44,7 @@ class LLMServiceClass extends EventEmitter {
       useCase: JSON.stringify(this.useCase)
     }).toString()
 
-    logInfo(`LLMService: opening SSE for “${utterance}” (emotion=${currentEmotion})`)
+    logInfo(`LLMService: opening SSE for “${utterance}” emotion=${currentEmotion}`)
 
     // Open the SSE connection
     const es = new EventSource(`/api/llm-get-chat-completion?${params}`)
@@ -59,8 +59,8 @@ class LLMServiceClass extends EventEmitter {
       }
     }
 
-    es.onerror = (err) => {
-      logError(`LLMService SSE error: ${err}`)
+    es.onerror = (e) => {
+      logError(`LLMService SSE error: ${JSON.stringify(e)}`)
       es.close()
     }
   }

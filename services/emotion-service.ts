@@ -209,10 +209,8 @@ class EmotionServiceClass extends EventEmitter {
         logInfo(`EmotionService: EmotionObject ${JSON.stringify(this.emotionObject)}`)
         const intervalId = setInterval(async () => {
             if (this.emotionObject?.isSet) {
-                logInfo(`EmotionService: Analyzing Frame`)
                 await this.analyzeFrame()
             } else {
-                logInfo(`EmotionService: Clearing Interval`)
                 clearInterval(intervalId)
             }
         }, TIME_SLICE)

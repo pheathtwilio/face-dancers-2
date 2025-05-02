@@ -12,7 +12,7 @@ enum AvatarEvents {
     AVATAR_STOP_TALKING = 'avatar-stop-talking',
     AVATAR_SAY = 'avatar-say',
     AVATAR_SPEECH_SESSION_START = 'avatar-speech-session-start',
-    AVATAR_SPEECH_SESSION_END = 'avatar-speech-session-end'
+    AVATAR_SPEECH_SESSION_END = 'avatar-speech-session-end',
 }
 
 export default AvatarEvents
