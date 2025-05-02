@@ -49,19 +49,29 @@ class LLMServiceClass extends EventEmitter {
     // Open the SSE connection
     const es = new EventSource(`/api/llm-get-chat-completion?${params}`)
 
+    es.onopen = () => {
+      logInfo(`LLMService: SSE Connection OPEN (readyState=${es.readyState})`)
+    }
+
     es.onmessage = (event) => {
       try {
         const { text } = JSON.parse(event.data)
-        logInfo(`LLMService: received snippet → "${text}"`)
+        logInfo(`LLMService: received snippet -> "${text}"`)
         EventService.emit(AvatarEvents.AVATAR_SAY, text)
       } catch (err) {
         logError(`LLMService: failed to parse SSE data: ${err}`)
       }
     }
 
-    es.onerror = (e) => {
-      logError(`LLMService SSE error: ${JSON.stringify(e)}`)
+    es.onerror = (event) => {
+      const state = es.readyState
+      logError(
+        `LLMService SSE error: readyState=${state}, eventType=${(event as any).type}`
+      )
+
+      // need to force close
       es.close()
+
     }
   }
 }
