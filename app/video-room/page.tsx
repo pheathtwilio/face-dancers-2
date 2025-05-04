@@ -9,6 +9,7 @@ import STTEvents from '@/util/stt-types'
 import DeepgramEvents from '@/util/deepgram-types'
 import { logInfo } from '@/services/logger-service'
 import { EmotionEvents } from '@/util/emotion-types'
+import llmTypes from '@/util/llm-types'
 
 
 const VideoRoom: React.FC = () => {
@@ -75,6 +76,7 @@ const VideoRoom: React.FC = () => {
         EventService.emit(STTEvents.STT_END_SESSION)
         EventService.emit(DeepgramEvents.DEEPGRAM_END_SESSION)
         EventService.emit(EmotionEvents.EMOTIONS_STOP_EMOTION_CAPTURE)
+        EventService.emit(llmTypes.LLM_SESSION_ENDED)
       }
         
     }, [])

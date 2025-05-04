@@ -15,6 +15,7 @@ import STTService from '@/services/speech-to-text-service'
 import DeepgramEvents from '@/util/deepgram-types'
 import EmotionService from '@/services/emotion-service'
 
+
 import { logInfo, logError } from '@/services/logger-service'
 
 const WaitingRoom: React.FC = () => {
@@ -58,6 +59,7 @@ const WaitingRoom: React.FC = () => {
       videoServiceRef.current    = VideoService
       deepgramServiceRef.current = DeepgramService
       emotionServiceRef.current = EmotionService
+      
 
       startDeepgram()
       llmServiceRef.current = LLMService

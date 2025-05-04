@@ -108,10 +108,10 @@ class DeepgramServiceClass extends EventEmitter {
             this.startKeepAlive()
         })
 
-        this.connection?.on(LiveTranscriptionEvents.SpeechStarted, () => {
-            // when detecting speech tell the avatar to stop talking
-            logInfo(`Deepgram-Service: Speech Started Detected at ${new Date().getTime()}`)
-        })
+        // this.connection?.on(LiveTranscriptionEvents.SpeechStarted, () => {
+        //     // when detecting speech tell the avatar to stop talking
+        //     logInfo(`Deepgram-Service: Speech Started Detected at ${new Date().getTime()}`)
+        // })
 
         let is_finals: string[] = []
         this.connection?.on(LiveTranscriptionEvents.Transcript, (data) => {
@@ -150,7 +150,6 @@ class DeepgramServiceClass extends EventEmitter {
             this.connection?.disconnect()
         })
         this.connection?.on(LiveTranscriptionEvents.Error, (e) => {
-
             logError(`Deepgram-Service: Transcription Event Error ${e}`)
             this.stopKeepAlive()
             try{
