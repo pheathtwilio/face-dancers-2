@@ -61,8 +61,11 @@ class LLMServiceClass extends EventEmitter {
   
   private async destroySession() {
     try {
+      const sessionId = this.sessionId
       const res = await fetch('/api/upstash-delete-session', {
         method:  'DELETE',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sessionId }),
         cache:   'no-store'
       })
       if (!res.ok) {
