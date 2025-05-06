@@ -6,16 +6,16 @@ import AvatarEvents from '@/util/avatar-types'
 import EventService from '@/services/event-service'
 import VideoService from '@/services/video-service'
 import { VideoEvents } from '@/util/video-types'
+import { logError, logInfo } from '@/services/logger-service'
 
-import { logError } from '@/services/logger-service'
 
-
-const WaitingRoom: React.FC = () => {
+const AdminRoom: React.FC = () => {
 
     const avatarServiceRef = useRef<typeof AvatarService | null>(null)
     const videoServiceRef = useRef<typeof VideoService | null>(null)
     const [avatarSessions, setAvatarSessions] = useState<object[]>([])
     const [videoRooms, setVideoRooms] = useState<object[]>([])
+    const [cache, setCache] = useState<string[]>([])
     
 
     // Global Mounting    
@@ -38,6 +38,9 @@ const WaitingRoom: React.FC = () => {
           // get the video rooms if they exist
           listRooms()
 
+          // get the cache
+          listCache()
+
         }catch(e){
           logError(`Admin: ${e}`)
         }
@@ -53,11 +56,22 @@ const WaitingRoom: React.FC = () => {
     }
 
     const listRooms = async () => {
+      logInfo(`Admin: Listing Rooms`)
       EventService.emit(VideoEvents.VIDEO_LIST_ROOMS)
     }
 
     const endRoom = async (roomSid: string) => {
       EventService.emit(VideoEvents.VIDEO_END_ROOM, (roomSid))
+    }
+    
+    const listCache = async () => {
+      const response = await fetch('/api/upstash-get-all-sessions', { method: 'GET'})
+      const payload = await response.json()
+      setCache(payload.allKeys)
+    }
+
+    const flushCache = async () => {
+
     }
 
     return (
@@ -128,6 +142,36 @@ const WaitingRoom: React.FC = () => {
                           <ListGroup.Item className="text-muted text-center">No active Rooms</ListGroup.Item>
                         )}
                       </ListGroup>
+
+
+                      {/* Cache Management */}
+                      <Alert variant='warning' className='text-center fw-semibold'>
+                        Redis Cache
+                      </Alert>
+                      <Button variant='dark' onClick={listSessions} className='w-100 btn-lg mb-3'>
+                        List Redis Cache
+                      </Button>
+                      <ListGroup className="border rounded">
+                        {cache.length > 0 ? (
+                          cache.map((item: any) => (
+                            <ListGroup.Item key={item} className="py-3">
+                              <Row className="align-items-center">
+                                <Col>
+                                  {item}
+                                </Col>
+                                <Col xs="auto">
+                                  <Button variant="danger" size="sm" onClick={() => console.log('do nothing')}>
+                                    DONT DO ANYTHING
+                                  </Button>
+                                </Col>
+                              </Row>
+                            </ListGroup.Item>
+                          ))
+                        ) : (
+                          <ListGroup.Item className="text-muted text-center">No active sessions</ListGroup.Item>
+                        )}
+                      </ListGroup>
+
                     </Card.Body>
                   </Card>
                 </Col>
@@ -138,4 +182,4 @@ const WaitingRoom: React.FC = () => {
     )
 }
 
-export default WaitingRoom
+export default AdminRoom
