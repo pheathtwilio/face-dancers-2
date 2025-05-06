@@ -16,9 +16,6 @@ class LLMServiceClass extends EventEmitter {
   private sessionId!: string
   private isStreaming = false
 
-  /** local copy of the conversation */
-  // public history: ChatMessage[] = []
-
   private constructor() {
     super()
     this.initializeSession()
@@ -53,27 +50,6 @@ class LLMServiceClass extends EventEmitter {
     await this.getOrCreateSessionId()
   }
 
-  // private async getOrCreateSessionId() {
-
-  //   // check if running in server or browser
-  //   if(typeof window === 'undefined' || typeof window.localStorage === 'undefined'){
-  //     this.sessionId
-  //   }
-
-
-  //   let id = localStorage.getItem('SessionId')
-  //   if (!id) {
-  //     id = crypto.randomUUID()
-  //     localStorage.setItem('SessionId', id)
-  //     logInfo(`LLM-Service: created new session ID ${id}`)
-  //   } else {
-  //     logInfo(`LLM-Service: using existing session ID ${id}`)
-  //   }
-  //   this.sessionId = id
-  //   // clear local history on new session
-  //   // this.history = []
-  // }
-
   private async getOrCreateSessionId() {
     const res = await fetch('/api/upstash-get-session', { cache: 'no-store' })
     if (!res.ok) {
@@ -83,15 +59,8 @@ class LLMServiceClass extends EventEmitter {
     this.sessionId = sessionId
   }
   
-  // private destroySession() {
-  //   localStorage.removeItem('SessionId')
-  //   this.getOrCreateSessionId()
-  //     .then(() => logInfo(`LLM-Service: session reset to ${this.sessionId}`))
-  //     .catch(err => logError(`LLM-Service: failed to reset session: ${err}`))
-  // }
   private async destroySession() {
     try {
-      // 1) Hit your DELETE handler to drop the cookie + Redis entry
       const res = await fetch('/api/upstash-delete-session', {
         method:  'DELETE',
         cache:   'no-store'
@@ -100,7 +69,6 @@ class LLMServiceClass extends EventEmitter {
         throw new Error(`Session DELETE failed (${res.status})`)
       }
 
-      // 2) Now re-GET a fresh sessionId (the GET will set a new cookie + Redis key)
       await this.getOrCreateSessionId()
 
       logInfo(`LLM-Service: session reset to ${this.sessionId}`)
@@ -109,10 +77,6 @@ class LLMServiceClass extends EventEmitter {
     }
   }
 
-  /** 
-   * Sends the user's utterance to the SSE endpoint via POST,
-   * streams back assistant snippets, and updates local history.
-   */
   private async completion(utterance: string, currentEmotion: string) {
     if (this.isStreaming) {
       logInfo('LLM-Service: already streaming ignoring new utterance')
@@ -122,9 +86,6 @@ class LLMServiceClass extends EventEmitter {
       throw new Error('LLM-Service: no session ID set')
     }
     this.isStreaming = true
-
-    // locally record the user turn
-    // this.history.push({ role: 'user', content: utterance })
 
     const payload = {
       sessionId: this.sessionId,
@@ -173,8 +134,6 @@ class LLMServiceClass extends EventEmitter {
         const json = chunk.slice(5).trim()
         try {
           const { text } = JSON.parse(json)
-          // record assistant turn
-          // this.history.push({ role: 'assistant', content: text })
           EventService.emit(AvatarEvents.AVATAR_SAY, text)
         } catch (err) {
           logError(`LLM-Service: failed to parse data chunk: ${err}`)
