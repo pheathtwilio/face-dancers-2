@@ -53,25 +53,60 @@ class LLMServiceClass extends EventEmitter {
     await this.getOrCreateSessionId()
   }
 
-  private async getOrCreateSessionId() {
-    let id = localStorage.getItem('SessionId')
-    if (!id) {
-      id = crypto.randomUUID()
-      localStorage.setItem('SessionId', id)
-      logInfo(`LLM-Service: created new session ID ${id}`)
-    } else {
-      logInfo(`LLM-Service: using existing session ID ${id}`)
-    }
-    this.sessionId = id
-    // clear local history on new session
-    // this.history = []
-  }
+  // private async getOrCreateSessionId() {
 
-  private destroySession() {
-    localStorage.removeItem('SessionId')
-    this.getOrCreateSessionId()
-      .then(() => logInfo(`LLM-Service: session reset to ${this.sessionId}`))
-      .catch(err => logError(`LLM-Service: failed to reset session: ${err}`))
+  //   // check if running in server or browser
+  //   if(typeof window === 'undefined' || typeof window.localStorage === 'undefined'){
+  //     this.sessionId
+  //   }
+
+
+  //   let id = localStorage.getItem('SessionId')
+  //   if (!id) {
+  //     id = crypto.randomUUID()
+  //     localStorage.setItem('SessionId', id)
+  //     logInfo(`LLM-Service: created new session ID ${id}`)
+  //   } else {
+  //     logInfo(`LLM-Service: using existing session ID ${id}`)
+  //   }
+  //   this.sessionId = id
+  //   // clear local history on new session
+  //   // this.history = []
+  // }
+
+  private async getOrCreateSessionId() {
+    const res = await fetch('/api/upstash-get-session', { cache: 'no-store' })
+    if (!res.ok) {
+      throw new Error(`Session API failed: ${res.status}`)
+    }
+    const { sessionId } = await res.json()
+    this.sessionId = sessionId
+  }
+  
+  // private destroySession() {
+  //   localStorage.removeItem('SessionId')
+  //   this.getOrCreateSessionId()
+  //     .then(() => logInfo(`LLM-Service: session reset to ${this.sessionId}`))
+  //     .catch(err => logError(`LLM-Service: failed to reset session: ${err}`))
+  // }
+  private async destroySession() {
+    try {
+      // 1) Hit your DELETE handler to drop the cookie + Redis entry
+      const res = await fetch('/api/upstash-delete-session', {
+        method:  'DELETE',
+        cache:   'no-store'
+      })
+      if (!res.ok) {
+        throw new Error(`Session DELETE failed (${res.status})`)
+      }
+
+      // 2) Now re-GET a fresh sessionId (the GET will set a new cookie + Redis key)
+      await this.getOrCreateSessionId()
+
+      logInfo(`LLM-Service: session reset to ${this.sessionId}`)
+    } catch (e) {
+      logError(`LLM-Service: failed to reset session: ${e}`)
+    }
   }
 
   /** 
@@ -80,7 +115,7 @@ class LLMServiceClass extends EventEmitter {
    */
   private async completion(utterance: string, currentEmotion: string) {
     if (this.isStreaming) {
-      logInfo('LLM-Service: already streaming; ignoring new utterance')
+      logInfo('LLM-Service: already streaming ignoring new utterance')
       return
     }
     if (!this.sessionId) {
