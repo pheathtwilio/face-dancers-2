@@ -15,7 +15,7 @@ export async function DELETE(req: Request) {
 
   if (!sessionId) {
     logInfo(`upstash-delete-session: no SessionId was passed, nothing to do`)
-    return null
+    return NextResponse.json({ success: false, error: 'Missing SessionId'}, {status: 400})
   }else{
 
     const numberOfKeys = await redis.del(`sess:${sessionId}`)
