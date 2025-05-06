@@ -70,6 +70,19 @@ const AdminRoom: React.FC = () => {
       setCache(payload.allKeys)
     }
 
+    const endCache = async (key: string) => {
+      const sessionId = key.split(":")[1]
+      const res = await fetch('/api/upstash-delete-session', {
+        method:  'DELETE',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sessionId }),
+        cache:   'no-store'
+      })
+      if (!res.ok) {
+        throw new Error(`Session DELETE failed (${res.status})`)
+      }
+    }
+
     const flushCache = async () => {
 
     }
@@ -160,8 +173,8 @@ const AdminRoom: React.FC = () => {
                                   {item}
                                 </Col>
                                 <Col xs="auto">
-                                  <Button variant="danger" size="sm" onClick={() => console.log('do nothing')}>
-                                    DONT DO ANYTHING
+                                  <Button variant="danger" size="sm" onClick={() => endCache(item)}>
+                                    End Cache
                                   </Button>
                                 </Col>
                               </Row>
