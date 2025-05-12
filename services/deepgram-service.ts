@@ -11,6 +11,7 @@ import llmTypes from '@/util/llm-types'
 type DeepgramSTTOptions = {
     apiKey: string
     config: {
+        model?: string
         language?: string
         punctuate?: boolean
         interimResults?: boolean
@@ -29,6 +30,7 @@ class DeepgramServiceClass extends EventEmitter {
     private options: DeepgramSTTOptions | null = {
         apiKey: '',
         config: {
+            model: 'nova-3',
             language: 'en',
             punctuate: true,
             interimResults: true,
